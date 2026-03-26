@@ -250,12 +250,16 @@
   <h3>📋 매매 절차</h3>
   <div class="rule-timeline" style="margin-top:12px;">
     <div class="rule-step">
-      <span class="time">오후 3:30</span>
-      <span class="desc">토스 → 투자자 동향<br>외국인 순매수 1위 확인<br>(ETF·300만↑ 패스)</span>
+      <span class="time">오후 3:20</span>
+      <span class="desc">토스 → 투자자 동향<br>외국인 순매수 1위 잠정 확인<br>(ETF·300만↑ 패스)</span>
     </div>
     <div class="rule-step">
-      <span class="time">오후 3:40~4:00</span>
-      <span class="desc">해당 종목 지정가 매수<br>종가 입력, 전액 투입</span>
+      <span class="time">오후 3:20~3:30</span>
+      <span class="desc">동시호가 시간<br>해당 종목 매수 주문 제출<br>전액 투입</span>
+    </div>
+    <div class="rule-step">
+      <span class="time">오후 3:30</span>
+      <span class="desc">종가로 체결 확인</span>
     </div>
     <div class="rule-step">
       <span class="time">그날 밤</span>
@@ -712,20 +716,37 @@ function renderTodayBanner(trades) {
         <small>추가 매매 금지! 내일 3시 30분까지 앱 안 보기</small>
       </div>`;
   } else if (hour < 15) {
+    const min = new Date().getMinutes();
     banner.className = 'today-banner banner-closed';
     banner.innerHTML = `
       <div class="icon">😴</div>
       <div class="msg">
         아직 매매 시간 아닙니다
-        <small>오후 3시 30분에 토스 → 투자자 동향 → 외국인 순매수 1위 확인</small>
+        <small>오후 3시 20분에 토스 → 투자자 동향 → 외국인 순매수 1위 잠정 확인</small>
       </div>`;
-  } else if (hour >= 15 && hour < 16) {
+  } else if (hour === 15 && min < 20) {
+    banner.className = 'today-banner banner-closed';
+    banner.innerHTML = `
+      <div class="icon">😴</div>
+      <div class="msg">
+        아직 매매 시간 아닙니다
+        <small>오후 3시 20분에 토스 → 투자자 동향 → 외국인 순매수 1위 잠정 확인</small>
+      </div>`;
+  } else if (hour === 15 && min >= 20 && min < 30) {
     banner.className = 'today-banner banner-wait';
     banner.innerHTML = `
       <div class="icon">🔥</div>
       <div class="msg">
-        지금이 매매 시간입니다! (${hour}시)
-        <small>외국인 순매수 1위 확인 → 지정가 매수 → 종가 → 전액 → 끝. 한 번만!</small>
+        지금! 동시호가 매수 시간! (3:20~3:30)
+        <small>순매수 1위 확인 → 매수 주문 제출 → 3:30 종가 체결. 한 번만!</small>
+      </div>`;
+  } else if (hour === 15 && min >= 30) {
+    banner.className = 'today-banner banner-closed';
+    banner.innerHTML = `
+      <div class="icon">⏰</div>
+      <div class="msg">
+        오늘 매매 시간이 지났습니다
+        <small>오늘은 패스. 내일 3시 20분에 다시!</small>
       </div>`;
   } else {
     banner.className = 'today-banner banner-closed';
@@ -733,7 +754,7 @@ function renderTodayBanner(trades) {
       <div class="icon">⏰</div>
       <div class="msg">
         오늘 매매 시간이 지났습니다
-        <small>${todayTrade ? '' : '오늘은 패스. 내일 3시 30분에 다시!'}</small>
+        <small>오늘은 패스. 내일 3시 20분에 다시!</small>
       </div>`;
   }
 }
