@@ -740,7 +740,7 @@ function calcTrade(trade, prevBalance) {
 
 function calcAllTrades(trades) {
   let balance = INITIAL_BALANCE;
-  return trades.map(t => {
+  return trades.filter(t => t.date && t.buyPrice).map(t => {
     const c = calcTrade(t, balance);
     balance = c.newBalance;
     return { ...t, ...c };
@@ -1420,8 +1420,10 @@ function renderSeasonalChart(data) {
   const monthData = {};
   for (let m = 1; m <= 12; m++) monthData[m] = [];
   data.forEach(d => {
-    const month = parseInt(d.date.slice(5, 7));
-    monthData[month].push(d.returnPct);
+    const dateStr = String(d.date || '');
+    if (dateStr.length < 7) return;
+    const month = parseInt(dateStr.slice(5, 7));
+    if (month >= 1 && month <= 12) monthData[month].push(d.returnPct);
   });
 
   const myAvg = [];
