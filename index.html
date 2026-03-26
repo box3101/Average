@@ -157,7 +157,7 @@
 <div class="header">
   <div class="header-left">
     <h1>📈 외국인 <span>따라매매</span> 대시보드</h1>
-    <h2>토스증권 · 자본금 1,200만원 · 수수료 0.2% · 세금 0.18%</h2>
+    <h2>토스증권 · 자본금 100만원 · 수수료 0.2% · 세금 0.18%</h2>
   </div>
   <div class="header-right">
     <button class="btn btn-outline" onclick="exportCSV()">CSV 내보내기</button>
@@ -207,8 +207,8 @@
 <div class="grid grid-5" id="statsGrid">
   <div class="stat-card">
     <div class="stat-label">누적 잔고</div>
-    <div class="stat-value" id="statBalance">₩12,000,000</div>
-    <div class="stat-sub" id="statBalanceSub">시작 1,200만</div>
+    <div class="stat-value" id="statBalance">₩1,000,000</div>
+    <div class="stat-sub" id="statBalanceSub">시작 100만</div>
   </div>
   <div class="stat-card">
     <div class="stat-label">총 거래일</div>
@@ -298,11 +298,11 @@
   <div class="report-grid" style="margin-top:12px;">
     <div class="report-item">
       <div class="label">시작 잔고</div>
-      <div class="value">₩12,000,000</div>
+      <div class="value">₩1,000,000</div>
     </div>
     <div class="report-item">
       <div class="label">현재 잔고</div>
-      <div class="value" id="reportCurrent">₩12,000,000</div>
+      <div class="value" id="reportCurrent">₩1,000,000</div>
     </div>
     <div class="report-item">
       <div class="label">총 손익</div>
@@ -353,7 +353,7 @@
 </div>
 
 <script>
-const INITIAL_BALANCE = 12000000;
+const INITIAL_BALANCE = 1000000;
 const TAX_RATE = 0.0018;
 const FEE_RATE = 0.002; // 수수료 0.2% (매도 시 1회만)
 const STORAGE_KEY = 'foreign_follow_trades';
