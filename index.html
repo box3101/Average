@@ -240,7 +240,7 @@
 <div class="header">
   <div class="header-left">
     <h1>📈 외국인 <span>따라매매</span> 대시보드</h1>
-    <h2>토스증권 · 자본금 100만원 · 수수료 0.2% · 세금 0.18%</h2>
+    <h2>토스증권 · 자본금 100만원 · 수수료 0.2% · 세금 0.18% <span id="cloudStatus" style="font-size:12px;color:#71717a;">💾 로컬 저장</span></h2>
   </div>
   <div class="header-right">
     <button class="btn btn-outline" onclick="exportCSV()">CSV 내보내기</button>
@@ -681,13 +681,47 @@ const FEE_RATE = 0.002;
 const STORAGE_KEY = 'foreign_follow_trades';
 const DAY_NAMES = ['일', '월', '화', '수', '목', '금', '토'];
 
+// ===== Google Sheets 연동 설정 =====
+// Apps Script 배포 후 아래 URL과 비밀번호를 입력하세요
+const APPS_SCRIPT_URL = ''; // 예: 'https://script.google.com/macros/s/XXXX/exec'
+const APPS_SCRIPT_PW = 'average2026';
+const USE_CLOUD = !!APPS_SCRIPT_URL; // URL이 있으면 클라우드 사용
+
 // --- 데이터 ---
-function loadTrades() {
+function loadTradesLocal() {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
   catch { return []; }
 }
-function saveTrades(trades) {
+function saveTradesLocal(trades) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(trades));
+}
+
+async function loadTrades() {
+  if (!USE_CLOUD) return loadTradesLocal();
+  try {
+    const res = await fetch(`${APPS_SCRIPT_URL}?pw=${encodeURIComponent(APPS_SCRIPT_PW)}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    const trades = data.trades || [];
+    saveTradesLocal(trades); // 로컬 캐시 갱신
+    return trades;
+  } catch (err) {
+    console.warn('Google Sheets 로딩 실패, localStorage 폴백:', err);
+    return loadTradesLocal();
+  }
+}
+
+async function saveTrades(trades) {
+  saveTradesLocal(trades); // 즉시 로컬 저장 (UI 빠른 반영)
+  if (!USE_CLOUD) return;
+  try {
+    await fetch(`${APPS_SCRIPT_URL}?pw=${encodeURIComponent(APPS_SCRIPT_PW)}`, {
+      method: 'POST',
+      body: JSON.stringify({ trades }),
+    });
+  } catch (err) {
+    console.warn('Google Sheets 저장 실패:', err);
+  }
 }
 
 // --- 계산 ---
@@ -730,7 +764,7 @@ function escapeHtml(str) {
 }
 
 // --- 거래 추가 ---
-function addTrade() {
+async function addTrade() {
   const date = document.getElementById('inputDate').value;
   const stock = document.getElementById('inputStock').value.trim();
   const buyPrice = parseInt(document.getElementById('inputBuyPrice').value);
@@ -742,7 +776,7 @@ function addTrade() {
     return;
   }
 
-  const trades = loadTrades();
+  const trades = await loadTrades();
 
   // 같은 날 중복 매매 차단
   const sameDayTrade = trades.find(t => t.date === date);
@@ -759,8 +793,8 @@ function addTrade() {
   const gap = parseFloat(document.getElementById('inputGap').value) || null;
   trades.push({ date, stock, buyPrice, sellPrice, memo, kospi, kosdaq, nasdaq, fx, sector, gap });
   trades.sort((a, b) => a.date.localeCompare(b.date));
-  saveTrades(trades);
-  renderAll();
+  await saveTrades(trades);
+  await renderAll();
 
   document.getElementById('inputStock').value = '';
   document.getElementById('inputBuyPrice').value = '';
@@ -775,17 +809,17 @@ function addTrade() {
 }
 
 // --- 삭제 ---
-function deleteTrade(idx) {
+async function deleteTrade(idx) {
   if (!confirm('이 거래를 삭제할까요?')) return;
-  const trades = loadTrades();
+  const trades = await loadTrades();
   trades.splice(idx, 1);
-  saveTrades(trades);
-  renderAll();
+  await saveTrades(trades);
+  await renderAll();
 }
 
 // --- 수정 모달 ---
-function openEditModal(idx) {
-  const trades = loadTrades();
+async function openEditModal(idx) {
+  const trades = await loadTrades();
   const t = trades[idx];
   document.getElementById('editIndex').value = idx;
   document.getElementById('editDate').value = t.date;
@@ -804,9 +838,9 @@ function openEditModal(idx) {
 function closeEditModal() {
   document.getElementById('editModal').classList.remove('active');
 }
-function saveEdit() {
+async function saveEdit() {
   const idx = parseInt(document.getElementById('editIndex').value);
-  const trades = loadTrades();
+  const trades = await loadTrades();
   trades[idx] = {
     date: document.getElementById('editDate').value,
     stock: document.getElementById('editStock').value.trim(),
@@ -821,14 +855,14 @@ function saveEdit() {
     memo: document.getElementById('editMemo').value.trim(),
   };
   trades.sort((a, b) => a.date.localeCompare(b.date));
-  saveTrades(trades);
+  await saveTrades(trades);
   closeEditModal();
-  renderAll();
+  await renderAll();
 }
 
 // --- CSV 내보내기 ---
-function exportCSV() {
-  const trades = loadTrades();
+async function exportCSV() {
+  const trades = await loadTrades();
   if (!trades.length) { alert('내보낼 데이터가 없습니다.'); return; }
   const calculated = calcAllTrades(trades);
   const bom = '\uFEFF';
@@ -849,7 +883,7 @@ function importCSV(event) {
   const file = event.target.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = function(e) {
+  reader.onload = async function(e) {
     const lines = e.target.result.split('\n').filter(l => l.trim());
     if (lines.length < 2) { alert('유효한 CSV가 아닙니다.'); return; }
     const trades = [];
@@ -870,11 +904,11 @@ function importCSV(event) {
     }
     if (!trades.length) { alert('가져올 데이터가 없습니다.'); return; }
     if (!confirm(`${trades.length}건의 거래를 가져옵니다. 기존 데이터에 추가됩니다.`)) return;
-    const existing = loadTrades();
+    const existing = await loadTrades();
     const merged = [...existing, ...trades];
     merged.sort((a, b) => a.date.localeCompare(b.date));
-    saveTrades(merged);
-    renderAll();
+    await saveTrades(merged);
+    await renderAll();
     alert(`${trades.length}건 가져오기 완료!`);
   };
   reader.readAsText(file);
@@ -882,8 +916,8 @@ function importCSV(event) {
 }
 
 // ===== 렌더링 =====
-function renderAll() {
-  const trades = loadTrades();
+async function renderAll() {
+  const trades = await loadTrades();
   const calculated = calcAllTrades(trades);
   renderTodayBanner(trades);
   renderTable(calculated);
@@ -1576,8 +1610,17 @@ function renderReport(data) {
 }
 
 // --- 초기화 ---
-document.getElementById('inputDate').value = new Date().toISOString().slice(0, 10);
-renderAll();
+(async function init() {
+  document.getElementById('inputDate').value = new Date().toISOString().slice(0, 10);
+
+  // 클라우드 모드 표시
+  if (USE_CLOUD) {
+    document.getElementById('cloudStatus').textContent = '☁️ Google Sheets 연동 중';
+    document.getElementById('cloudStatus').style.color = '#22c55e';
+  }
+
+  await renderAll();
+})();
 </script>
 </body>
 </html>
