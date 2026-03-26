@@ -180,6 +180,36 @@
     text-align: center; padding: 40px; color: #52525b; font-size: 14px;
   }
 
+  /* 오늘 상태 배너 */
+  .today-banner {
+    border-radius: 12px; padding: 20px 24px; margin-bottom: 24px;
+    display: flex; align-items: center; gap: 16px; font-size: 15px; font-weight: 600;
+  }
+  .today-banner .icon { font-size: 32px; }
+  .today-banner .msg { flex: 1; }
+  .today-banner .msg small { display: block; font-size: 12px; font-weight: 400; margin-top: 4px; color: rgba(255,255,255,0.7); }
+  .banner-done {
+    background: linear-gradient(135deg, #1e3a5f, #1e293b);
+    border: 1px solid #3b82f6;
+  }
+  .banner-wait {
+    background: linear-gradient(135deg, #3b1f1f, #1e293b);
+    border: 1px solid #f59e0b;
+  }
+  .banner-closed {
+    background: linear-gradient(135deg, #1f1f23, #18181b);
+    border: 1px solid #3f3f46; color: #71717a;
+  }
+
+  /* 룰 카드 강화 */
+  .rule-warning {
+    background: #2d1215; border: 1px solid #7f1d1d; border-radius: 8px;
+    padding: 14px 18px; margin-top: 14px;
+    font-size: 16px; font-weight: 700; color: #fca5a5; text-align: center;
+    letter-spacing: 1px;
+  }
+  .rule-warning span { color: #ef4444; font-size: 20px; }
+
   @media (max-width: 768px) {
     .grid-2, .grid-3, .grid-5 { grid-template-columns: 1fr; }
     .form-row { grid-template-columns: 1fr 1fr; }
@@ -209,6 +239,12 @@
   </div>
 </div>
 
+<!-- 오늘 매매 상태 배너 -->
+<div id="todayBanner" class="today-banner banner-wait">
+  <div class="icon">⏳</div>
+  <div class="msg">로딩 중...</div>
+</div>
+
 <!-- ① 룰 카드 -->
 <div class="card" style="margin-bottom:24px;">
   <h3>📋 매매 절차</h3>
@@ -234,13 +270,18 @@
       <span class="desc">다시 1번부터<br>반복</span>
     </div>
   </div>
+  <div class="rule-warning">
+    <span>⚠️</span> 하루 1종목, 1매매. 절대 추가 매매 금지. <span>⚠️</span>
+  </div>
   <ul class="absolute-rules">
     <li>시초가에 무조건 판다. "더 오를 것 같은데" 금지</li>
-    <li>ETF 절대 안 산다</li>
-    <li>하루 한 종목, 전액만</li>
+    <li>ETF 절대 안 산다 (KODEX, TIGER, ACE 등)</li>
+    <li>하루 한 종목, 전액만. 추가 매매 절대 금지</li>
     <li>3번 연속 손실이어도 계속한다</li>
     <li>9시에 팔고 3시30분까지 앱 안 본다</li>
     <li>못 하는 날 → 전날 안 사면 됨</li>
+    <li>주가 300만원 이상이면 패스 → 2위로</li>
+    <li>체결 안 되면 → 그날 패스. 억지로 안 산다</li>
   </ul>
 </div>
 
@@ -526,6 +567,14 @@ function addTrade() {
   }
 
   const trades = loadTrades();
+
+  // 같은 날 중복 매매 차단
+  const sameDayTrade = trades.find(t => t.date === date);
+  if (sameDayTrade) {
+    alert(`⚠️ ${date}에 이미 "${sameDayTrade.stock}" 거래가 있습니다!\n\n🚫 하루 1종목, 1매매 룰을 지키세요.\n추가 매매는 절대 금지입니다.`);
+    return;
+  }
+
   trades.push({ date, stock, buyPrice, sellPrice, memo });
   trades.sort((a, b) => a.date.localeCompare(b.date));
   saveTrades(trades);
@@ -636,6 +685,7 @@ function importCSV(event) {
 function renderAll() {
   const trades = loadTrades();
   const calculated = calcAllTrades(trades);
+  renderTodayBanner(trades);
   renderTable(calculated);
   renderStats(calculated);
   renderMonthlyChart(calculated);
@@ -644,6 +694,48 @@ function renderAll() {
   renderHistogram(calculated);
   renderStockAnalysis(calculated);
   renderReport(calculated);
+}
+
+// --- 오늘 매매 상태 배너 ---
+function renderTodayBanner(trades) {
+  const banner = document.getElementById('todayBanner');
+  const today = new Date().toISOString().slice(0, 10);
+  const todayTrade = trades.find(t => t.date === today);
+  const hour = new Date().getHours();
+
+  if (todayTrade) {
+    banner.className = 'today-banner banner-done';
+    banner.innerHTML = `
+      <div class="icon">✅</div>
+      <div class="msg">
+        오늘(${today}) 매매 완료 — <strong>${escapeHtml(todayTrade.stock)}</strong>
+        <small>추가 매매 금지! 내일 3시 30분까지 앱 안 보기</small>
+      </div>`;
+  } else if (hour < 15) {
+    banner.className = 'today-banner banner-closed';
+    banner.innerHTML = `
+      <div class="icon">😴</div>
+      <div class="msg">
+        아직 매매 시간 아닙니다
+        <small>오후 3시 30분에 토스 → 투자자 동향 → 외국인 순매수 1위 확인</small>
+      </div>`;
+  } else if (hour >= 15 && hour < 16) {
+    banner.className = 'today-banner banner-wait';
+    banner.innerHTML = `
+      <div class="icon">🔥</div>
+      <div class="msg">
+        지금이 매매 시간입니다! (${hour}시)
+        <small>외국인 순매수 1위 확인 → 지정가 매수 → 종가 → 전액 → 끝. 한 번만!</small>
+      </div>`;
+  } else {
+    banner.className = 'today-banner banner-closed';
+    banner.innerHTML = `
+      <div class="icon">⏰</div>
+      <div class="msg">
+        오늘 매매 시간이 지났습니다
+        <small>${todayTrade ? '' : '오늘은 패스. 내일 3시 30분에 다시!'}</small>
+      </div>`;
+  }
 }
 
 // --- 거래 테이블 ---
