@@ -89,7 +89,9 @@ function doPost(e) {
         if (val === null || val === undefined) return '';
         return val;
       }));
-      sheet.getRange(2, 1, rows.length, HEADERS.length).setValues(rows);
+      const range = sheet.getRange(2, 1, rows.length, HEADERS.length);
+      range.setNumberFormat('@'); // 모든 셀을 텍스트 형식으로 설정 (날짜 자동변환 방지)
+      range.setValues(rows);
     }
 
     return jsonResponse({ success: true, count: trades.length });
