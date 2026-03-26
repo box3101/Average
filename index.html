@@ -470,6 +470,15 @@
   </div>
 </div>
 
+<!-- 요일별 평균 수익률 차트 (내 전략 vs 과거 평균) -->
+<div class="card mt">
+  <h3>📅 요일별 평균 수익률 (내 전략 vs 과거 평균)</h3>
+  <p style="font-size:12px;color:#71717a;margin-top:4px;">과거 5년 데이터 기준 화·목 강세, 월요일 약세 경향. 월·수 매수진입 → 화·목 청산이 유리</p>
+  <div class="chart-wrap" style="margin-top:12px;">
+    <canvas id="weekdayRefChart"></canvas>
+  </div>
+</div>
+
 <!-- 종목 반복 분석 -->
 <div class="card mt">
   <h3>🔁 종목 반복 분석</h3>
@@ -520,8 +529,10 @@
 
 <!-- 월별 계절성 차트 -->
 <div class="card mt">
-  <h3>🗓️ 월별 평균 수익률 (내 전략 vs 과거 평균)</h3>
-  <p style="font-size:12px;color:#71717a;margin-top:4px;">봄(3~5월)·가을(11~12월) 강세, 여름(8~9월) 약세 계절성 참고</p>
+  <h3>🗓️ 월별 평균 수익률 (내 전략 vs KOSPI·KOSDAQ 과거 평균)</h3>
+  <p style="font-size:12px;color:#71717a;margin-top:4px;">
+    <strong style="color:#f59e0b;">계절성 활용:</strong> 3~5월·9월 비중 확대 | 2·6·10월 보수적 접근 | 11~12월 연말 강세
+  </p>
   <div class="chart-wrap" style="margin-top:12px;">
     <canvas id="seasonalChart"></canvas>
   </div>
@@ -842,6 +853,7 @@ function renderAll() {
   renderSectorAnalysis(calculated);
   renderGapAnalysis(calculated);
   renderSeasonalChart(calculated);
+  renderWeekdayRefChart(calculated);
   renderReport(calculated);
 }
 
@@ -1227,7 +1239,7 @@ function renderMarketAnalysis(data) { renderCondAnalysis(data, 'market', 'market
 function renderSectorAnalysis(data) { renderCondAnalysis(data, 'sector', 'sectorAnalysis'); }
 function renderGapAnalysis(data) { renderCondAnalysis(data, 'gap', 'gapAnalysis'); }
 
-// --- 월별 계절성 차트 (내 전략 vs 기준) ---
+// --- 월별 계절성 차트 (내 전략 vs KOSPI·KOSDAQ 과거 평균) ---
 let seasonalChartInstance = null;
 function renderSeasonalChart(data) {
   const ctx = document.getElementById('seasonalChart').getContext('2d');
@@ -1236,7 +1248,6 @@ function renderSeasonalChart(data) {
     return;
   }
 
-  // 월별 평균 수익률 집계
   const monthData = {};
   for (let m = 1; m <= 12; m++) monthData[m] = [];
   data.forEach(d => {
@@ -1252,8 +1263,12 @@ function renderSeasonalChart(data) {
     counts.push(arr.length);
   }
 
-  // KOSPI 외국인 따라매매 과거 평균 (2020-2025 기준 참고값)
-  const kospiRef = [-0.5, 0.3, 1.8, 2.2, 4.0, 2.0, 2.0, -1.0, -2.5, -0.5, 4.5, 4.8];
+  // 2020~2025 과거 평균 (이미지 참고값)
+  const kospiRef =  [5.5, -0.5, 1.8, 2.2, 4.0, 2.0, 2.0, -1.0, -2.5, -0.5, 4.5, 1.5];
+  const kosdaqRef = [-4.5, 0.3, 2.0, 14.5, 5.0, -3.0, 5.0, 3.5, 9.5, -0.5, 3.5, 3.0];
+  // KOSPI/KOSDAQ 지수 평균
+  const kospiIdx =  [0.3, 0.5, 1.5, 2.0, 2.0, -0.5, 0.0, -1.5, -3.0, 0.5, 2.0, 1.5];
+  const kosdaqIdx = [0.0, 0.5, 1.5, 2.5, 2.0, 0.0, -0.5, -1.0, -2.0, 0.5, 2.0, 1.0];
 
   if (seasonalChartInstance) seasonalChartInstance.destroy();
   seasonalChartInstance = new Chart(ctx, {
@@ -1264,23 +1279,27 @@ function renderSeasonalChart(data) {
         {
           label: '내 전략',
           data: myAvg,
-          backgroundColor: myAvg.map(v => v >= 0 ? 'rgba(59,130,246,0.8)' : 'rgba(239,68,68,0.8)'),
-          borderRadius: 4,
-          order: 1,
+          backgroundColor: myAvg.map(v => v >= 0 ? 'rgba(59,130,246,0.85)' : 'rgba(239,68,68,0.85)'),
+          borderRadius: 4, order: 1,
         },
         {
-          label: '과거 평균 (참고)',
+          label: 'KOSPI 전략 평균',
           data: kospiRef,
-          backgroundColor: 'rgba(134,239,172,0.35)',
-          borderRadius: 4,
-          order: 2,
+          backgroundColor: 'rgba(34,197,94,0.6)',
+          borderRadius: 4, order: 2,
+        },
+        {
+          label: 'KOSDAQ 전략 평균',
+          data: kosdaqRef,
+          backgroundColor: 'rgba(34,197,94,0.25)',
+          borderRadius: 4, order: 3,
         }
       ]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: {
-        legend: { labels: { color: '#a1a1aa', font: { size: 12 } } },
+        legend: { labels: { color: '#a1a1aa', font: { size: 11 } } },
         tooltip: {
           callbacks: {
             afterLabel: function(ctx) {
@@ -1295,6 +1314,84 @@ function renderSeasonalChart(data) {
         x: { ticks: { color: '#71717a' }, grid: { display: false } },
         y: {
           ticks: { color: '#71717a', callback: v => v.toFixed(1) + '%' },
+          grid: { color: '#27272a' }
+        }
+      }
+    }
+  });
+}
+
+// --- 요일별 평균 수익률 차트 (내 전략 vs KOSPI·KOSDAQ 과거 평균) ---
+let weekdayRefChartInstance = null;
+function renderWeekdayRefChart(data) {
+  const ctx = document.getElementById('weekdayRefChart').getContext('2d');
+  if (!data.length) {
+    if (weekdayRefChartInstance) { weekdayRefChartInstance.destroy(); weekdayRefChartInstance = null; }
+    return;
+  }
+
+  const dayData = { 1:[], 2:[], 3:[], 4:[], 5:[] };
+  data.forEach(d => {
+    const dow = new Date(d.date).getDay();
+    if (dayData[dow]) dayData[dow].push(d.returnPct);
+  });
+
+  const myAvg = [];
+  const counts = [];
+  for (let i = 1; i <= 5; i++) {
+    const arr = dayData[i];
+    myAvg.push(arr.length ? arr.reduce((a,b) => a+b, 0) / arr.length : 0);
+    counts.push(arr.length);
+  }
+
+  // 과거 5년 평균 (이미지 참고값)
+  const kospiRef =  [0.35, 0.85, 0.55, 0.30, 0.05];
+  const kosdaqRef = [-0.45, 0.28, 0.02, 0.45, 0.15];
+
+  if (weekdayRefChartInstance) weekdayRefChartInstance.destroy();
+  weekdayRefChartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['월요일','화요일','수요일','목요일','금요일'],
+      datasets: [
+        {
+          label: '내 전략',
+          data: myAvg,
+          backgroundColor: myAvg.map(v => v >= 0 ? 'rgba(59,130,246,0.85)' : 'rgba(239,68,68,0.85)'),
+          borderRadius: 4, order: 1,
+        },
+        {
+          label: 'KOSPI 평균',
+          data: kospiRef,
+          backgroundColor: 'rgba(34,197,94,0.6)',
+          borderRadius: 4, order: 2,
+        },
+        {
+          label: 'KOSDAQ 평균',
+          data: kosdaqRef,
+          backgroundColor: 'rgba(34,197,94,0.25)',
+          borderRadius: 4, order: 3,
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#a1a1aa', font: { size: 11 } } },
+        tooltip: {
+          callbacks: {
+            afterLabel: function(ctx) {
+              if (ctx.datasetIndex === 0) return `(${counts[ctx.dataIndex]}건)`;
+              return '';
+            },
+            label: ctx => ctx.dataset.label + ': ' + ctx.raw.toFixed(2) + '%'
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { color: '#71717a' }, grid: { display: false } },
+        y: {
+          ticks: { color: '#71717a', callback: v => v.toFixed(2) + '%' },
           grid: { color: '#27272a' }
         }
       }
