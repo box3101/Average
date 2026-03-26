@@ -224,6 +224,7 @@
   @media (max-width: 768px) {
     .grid-2, .grid-3, .grid-5 { grid-template-columns: 1fr; }
     .form-row { grid-template-columns: 1fr 1fr; }
+    .form-row-meta { grid-template-columns: 1fr 1fr !important; }
     .form-row-memo { grid-template-columns: 1fr; }
     .report-grid { grid-template-columns: 1fr; }
     .absolute-rules { grid-template-columns: 1fr; }
@@ -347,15 +348,22 @@
     </div>
     <div></div>
   </div>
-  <div class="form-row-meta">
+  <div class="form-row-meta" style="grid-template-columns: repeat(6, 1fr);">
     <div class="form-group">
-      <label>시장 상황</label>
-      <select id="inputMarket">
-        <option value="">선택</option>
-        <option value="상승">📈 상승</option>
-        <option value="하락">📉 하락</option>
-        <option value="횡보">➡️ 횡보</option>
-      </select>
+      <label>KOSPI (%)</label>
+      <input type="number" step="0.01" id="inputKospi" placeholder="+1.2">
+    </div>
+    <div class="form-group">
+      <label>KOSDAQ (%)</label>
+      <input type="number" step="0.01" id="inputKosdaq" placeholder="-0.5">
+    </div>
+    <div class="form-group">
+      <label>나스닥 (%, 전일)</label>
+      <input type="number" step="0.01" id="inputNasdaq" placeholder="+0.8">
+    </div>
+    <div class="form-group">
+      <label>환율 (원)</label>
+      <input type="number" step="0.1" id="inputFx" placeholder="1380">
     </div>
     <div class="form-group">
       <label>업종</label>
@@ -380,13 +388,8 @@
       </select>
     </div>
     <div class="form-group">
-      <label>갭 방향 (다음날 시초가)</label>
-      <select id="inputGap">
-        <option value="">선택</option>
-        <option value="갭상승">⬆️ 갭상승</option>
-        <option value="보합">➡️ 보합</option>
-        <option value="갭하락">⬇️ 갭하락</option>
-      </select>
+      <label>갭 (%, 시초가)</label>
+      <input type="number" step="0.01" id="inputGap" placeholder="+1.5">
     </div>
   </div>
   <div class="form-row-memo">
@@ -421,15 +424,18 @@
           <th class="text-right">손익</th>
           <th class="text-right">수익률</th>
           <th class="text-right">누적잔고</th>
-          <th>시장</th>
+          <th class="text-right">KOSPI</th>
+          <th class="text-right">KOSDAQ</th>
+          <th class="text-right">나스닥</th>
+          <th class="text-right">환율</th>
           <th>업종</th>
-          <th>갭</th>
+          <th class="text-right">갭</th>
           <th>복기</th>
           <th class="text-center">관리</th>
         </tr>
       </thead>
       <tbody id="tradeBody">
-        <tr><td colspan="19" class="empty-state">거래 기록이 없습니다. 첫 거래를 입력하세요.</td></tr>
+        <tr><td colspan="22" class="empty-state">거래 기록이 없습니다. 첫 거래를 입력하세요.</td></tr>
       </tbody>
     </table>
   </div>
@@ -503,27 +509,49 @@
   </div>
 </div>
 
-<!-- 시장상황별 승률 + 업종별 승률 -->
+<!-- 시장 지표별 승률 분석 -->
 <div class="grid grid-2 mt">
   <div class="card">
-    <h3>📈 시장 상황별 승률</h3>
-    <div class="cond-grid" style="margin-top:12px;" id="marketAnalysis">
+    <h3>📈 KOSPI 구간별 승률</h3>
+    <div class="cond-grid" style="margin-top:12px;" id="kospiAnalysis">
       <div class="empty-state" style="grid-column:1/-1;">데이터가 필요합니다.</div>
     </div>
   </div>
+  <div class="card">
+    <h3>📊 KOSDAQ 구간별 승률</h3>
+    <div class="cond-grid" style="margin-top:12px;" id="kosdaqAnalysis">
+      <div class="empty-state" style="grid-column:1/-1;">데이터가 필요합니다.</div>
+    </div>
+  </div>
+</div>
+
+<div class="grid grid-2 mt">
+  <div class="card">
+    <h3>🇺🇸 나스닥 구간별 승률</h3>
+    <div class="cond-grid" style="margin-top:12px;" id="nasdaqAnalysis">
+      <div class="empty-state" style="grid-column:1/-1;">데이터가 필요합니다.</div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>💱 환율 구간별 승률</h3>
+    <div class="cond-grid" style="margin-top:12px;" id="fxAnalysis">
+      <div class="empty-state" style="grid-column:1/-1;">데이터가 필요합니다.</div>
+    </div>
+  </div>
+</div>
+
+<div class="grid grid-2 mt">
   <div class="card">
     <h3>🏭 업종별 승률</h3>
     <div class="cond-grid" style="margin-top:12px;" id="sectorAnalysis">
       <div class="empty-state" style="grid-column:1/-1;">데이터가 필요합니다.</div>
     </div>
   </div>
-</div>
-
-<!-- 갭 방향별 분석 -->
-<div class="card mt">
-  <h3>⬆️⬇️ 갭 방향별 승률</h3>
-  <div class="cond-grid" style="margin-top:12px;" id="gapAnalysis">
-    <div class="empty-state" style="grid-column:1/-1;">데이터가 필요합니다.</div>
+  <div class="card">
+    <h3>⬆️⬇️ 갭 구간별 승률</h3>
+    <div class="cond-grid" style="margin-top:12px;" id="gapAnalysis">
+      <div class="empty-state" style="grid-column:1/-1;">데이터가 필요합니다.</div>
+    </div>
   </div>
 </div>
 
@@ -591,45 +619,49 @@
       <label>매도가</label>
       <input type="number" id="editSellPrice">
     </div>
-    <div class="form-group">
-      <label>시장 상황</label>
-      <select id="editMarket">
-        <option value="">선택</option>
-        <option value="상승">📈 상승</option>
-        <option value="하락">📉 하락</option>
-        <option value="횡보">➡️ 횡보</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label>업종</label>
-      <select id="editSector">
-        <option value="">선택</option>
-        <option value="반도체">반도체</option>
-        <option value="2차전지">2차전지</option>
-        <option value="바이오">바이오</option>
-        <option value="금융">금융</option>
-        <option value="자동차">자동차</option>
-        <option value="조선">조선</option>
-        <option value="철강">철강</option>
-        <option value="화학">화학</option>
-        <option value="IT">IT/소프트웨어</option>
-        <option value="에너지">에너지</option>
-        <option value="건설">건설</option>
-        <option value="유통">유통/소비재</option>
-        <option value="방산">방산</option>
-        <option value="엔터">엔터/미디어</option>
-        <option value="통신">통신</option>
-        <option value="기타">기타</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label>갭 방향</label>
-      <select id="editGap">
-        <option value="">선택</option>
-        <option value="갭상승">⬆️ 갭상승</option>
-        <option value="보합">➡️ 보합</option>
-        <option value="갭하락">⬇️ 갭하락</option>
-      </select>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div class="form-group">
+        <label>KOSPI (%)</label>
+        <input type="number" step="0.01" id="editKospi" placeholder="+1.2">
+      </div>
+      <div class="form-group">
+        <label>KOSDAQ (%)</label>
+        <input type="number" step="0.01" id="editKosdaq" placeholder="-0.5">
+      </div>
+      <div class="form-group">
+        <label>나스닥 (%, 전일)</label>
+        <input type="number" step="0.01" id="editNasdaq" placeholder="+0.8">
+      </div>
+      <div class="form-group">
+        <label>환율 (원)</label>
+        <input type="number" step="0.1" id="editFx" placeholder="1380">
+      </div>
+      <div class="form-group">
+        <label>업종</label>
+        <select id="editSector">
+          <option value="">선택</option>
+          <option value="반도체">반도체</option>
+          <option value="2차전지">2차전지</option>
+          <option value="바이오">바이오</option>
+          <option value="금융">금융</option>
+          <option value="자동차">자동차</option>
+          <option value="조선">조선</option>
+          <option value="철강">철강</option>
+          <option value="화학">화학</option>
+          <option value="IT">IT/소프트웨어</option>
+          <option value="에너지">에너지</option>
+          <option value="건설">건설</option>
+          <option value="유통">유통/소비재</option>
+          <option value="방산">방산</option>
+          <option value="엔터">엔터/미디어</option>
+          <option value="통신">통신</option>
+          <option value="기타">기타</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>갭 (%, 시초가)</label>
+        <input type="number" step="0.01" id="editGap" placeholder="+1.5">
+      </div>
     </div>
     <div class="form-group">
       <label>복기 메모</label>
@@ -719,10 +751,13 @@ function addTrade() {
     return;
   }
 
-  const market = document.getElementById('inputMarket').value;
+  const kospi = parseFloat(document.getElementById('inputKospi').value) || null;
+  const kosdaq = parseFloat(document.getElementById('inputKosdaq').value) || null;
+  const nasdaq = parseFloat(document.getElementById('inputNasdaq').value) || null;
+  const fx = parseFloat(document.getElementById('inputFx').value) || null;
   const sector = document.getElementById('inputSector').value;
-  const gap = document.getElementById('inputGap').value;
-  trades.push({ date, stock, buyPrice, sellPrice, memo, market, sector, gap });
+  const gap = parseFloat(document.getElementById('inputGap').value) || null;
+  trades.push({ date, stock, buyPrice, sellPrice, memo, kospi, kosdaq, nasdaq, fx, sector, gap });
   trades.sort((a, b) => a.date.localeCompare(b.date));
   saveTrades(trades);
   renderAll();
@@ -730,7 +765,10 @@ function addTrade() {
   document.getElementById('inputStock').value = '';
   document.getElementById('inputBuyPrice').value = '';
   document.getElementById('inputSellPrice').value = '';
-  document.getElementById('inputMarket').value = '';
+  document.getElementById('inputKospi').value = '';
+  document.getElementById('inputKosdaq').value = '';
+  document.getElementById('inputNasdaq').value = '';
+  document.getElementById('inputFx').value = '';
   document.getElementById('inputSector').value = '';
   document.getElementById('inputGap').value = '';
   document.getElementById('inputMemo').value = '';
@@ -754,9 +792,12 @@ function openEditModal(idx) {
   document.getElementById('editStock').value = t.stock;
   document.getElementById('editBuyPrice').value = t.buyPrice;
   document.getElementById('editSellPrice').value = t.sellPrice;
-  document.getElementById('editMarket').value = t.market || '';
+  document.getElementById('editKospi').value = t.kospi ?? '';
+  document.getElementById('editKosdaq').value = t.kosdaq ?? '';
+  document.getElementById('editNasdaq').value = t.nasdaq ?? '';
+  document.getElementById('editFx').value = t.fx ?? '';
   document.getElementById('editSector').value = t.sector || '';
-  document.getElementById('editGap').value = t.gap || '';
+  document.getElementById('editGap').value = t.gap ?? '';
   document.getElementById('editMemo').value = t.memo || '';
   document.getElementById('editModal').classList.add('active');
 }
@@ -771,9 +812,12 @@ function saveEdit() {
     stock: document.getElementById('editStock').value.trim(),
     buyPrice: parseInt(document.getElementById('editBuyPrice').value),
     sellPrice: parseInt(document.getElementById('editSellPrice').value),
-    market: document.getElementById('editMarket').value,
+    kospi: parseFloat(document.getElementById('editKospi').value) || null,
+    kosdaq: parseFloat(document.getElementById('editKosdaq').value) || null,
+    nasdaq: parseFloat(document.getElementById('editNasdaq').value) || null,
+    fx: parseFloat(document.getElementById('editFx').value) || null,
     sector: document.getElementById('editSector').value,
-    gap: document.getElementById('editGap').value,
+    gap: parseFloat(document.getElementById('editGap').value) || null,
     memo: document.getElementById('editMemo').value.trim(),
   };
   trades.sort((a, b) => a.date.localeCompare(b.date));
@@ -788,10 +832,10 @@ function exportCSV() {
   if (!trades.length) { alert('내보낼 데이터가 없습니다.'); return; }
   const calculated = calcAllTrades(trades);
   const bom = '\uFEFF';
-  let csv = bom + '날짜,요일,종목,매수가,매도가,수량,매수금액,매도금액,수수료,세금,손익,수익률(%),누적잔고,시장,업종,갭,복기\n';
+  let csv = bom + '날짜,요일,종목,매수가,매도가,수량,매수금액,매도금액,수수료,세금,손익,수익률(%),누적잔고,KOSPI(%),KOSDAQ(%),나스닥(%),환율,업종,갭(%),복기\n';
   calculated.forEach(r => {
     const memo = (r.memo || '').replace(/"/g, '""');
-    csv += `${r.date},${getDayName(r.date)},${r.stock},${r.buyPrice},${r.sellPrice},${r.qty},${r.buyAmt},${r.sellAmt},${r.fee},${r.tax},${r.pnl},${r.returnPct.toFixed(2)},${r.newBalance},${r.market||''},${r.sector||''},${r.gap||''},"${memo}"\n`;
+    csv += `${r.date},${getDayName(r.date)},${r.stock},${r.buyPrice},${r.sellPrice},${r.qty},${r.buyAmt},${r.sellAmt},${r.fee},${r.tax},${r.pnl},${r.returnPct.toFixed(2)},${r.newBalance},${r.kospi??''},${r.kosdaq??''},${r.nasdaq??''},${r.fx??''},${r.sector||''},${r.gap??''},"${memo}"\n`;
   });
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const a = document.createElement('a');
@@ -849,9 +893,12 @@ function renderAll() {
   renderDayAnalysis(calculated);
   renderHistogram(calculated);
   renderStockAnalysis(calculated);
-  renderMarketAnalysis(calculated);
+  renderRangeAnalysis(calculated, 'kospi', 'kospiAnalysis', [-2,-1,0,1,2]);
+  renderRangeAnalysis(calculated, 'kosdaq', 'kosdaqAnalysis', [-2,-1,0,1,2]);
+  renderRangeAnalysis(calculated, 'nasdaq', 'nasdaqAnalysis', [-2,-1,0,1,2]);
+  renderFxAnalysis(calculated);
   renderSectorAnalysis(calculated);
-  renderGapAnalysis(calculated);
+  renderRangeAnalysis(calculated, 'gap', 'gapAnalysis', [-2,-1,0,1,2]);
   renderSeasonalChart(calculated);
   renderWeekdayRefChart(calculated);
   renderReport(calculated);
@@ -920,7 +967,7 @@ function renderTodayBanner(trades) {
 function renderTable(data) {
   const tbody = document.getElementById('tradeBody');
   if (!data.length) {
-    tbody.innerHTML = '<tr><td colspan="19" class="empty-state">거래 기록이 없습니다. 첫 거래를 입력하세요.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="22" class="empty-state">거래 기록이 없습니다. 첫 거래를 입력하세요.</td></tr>';
     return;
   }
   tbody.innerHTML = data.map((r, i) => {
@@ -940,9 +987,12 @@ function renderTable(data) {
       <td class="text-right num ${cls}">${r.pnl >= 0 ? '+' : ''}${fmt(r.pnl)}</td>
       <td class="text-right num ${cls}">${fmtPct(r.returnPct)}</td>
       <td class="text-right num">${fmt(r.newBalance)}</td>
-      <td class="text-center">${r.market||'-'}</td>
+      <td class="text-right num ${(r.kospi||0)>=0?'profit':'loss'}">${r.kospi!=null?r.kospi.toFixed(2)+'%':'-'}</td>
+      <td class="text-right num ${(r.kosdaq||0)>=0?'profit':'loss'}">${r.kosdaq!=null?r.kosdaq.toFixed(2)+'%':'-'}</td>
+      <td class="text-right num ${(r.nasdaq||0)>=0?'profit':'loss'}">${r.nasdaq!=null?r.nasdaq.toFixed(2)+'%':'-'}</td>
+      <td class="text-right num">${r.fx!=null?fmt(r.fx):'-'}</td>
       <td class="text-center">${r.sector||'-'}</td>
-      <td class="text-center">${r.gap||'-'}</td>
+      <td class="text-right num ${(r.gap||0)>=0?'profit':'loss'}">${r.gap!=null?(r.gap>=0?'+':'')+r.gap.toFixed(2)+'%':'-'}</td>
       <td class="memo-cell">${escapeHtml(r.memo)}</td>
       <td class="text-center">
         <button class="btn btn-outline btn-sm" onclick="openEditModal(${i})">수정</button>
@@ -1201,19 +1251,108 @@ function renderStockAnalysis(data) {
   }).join('');
 }
 
-// --- 조건별 분석 공통 함수 ---
-function renderCondAnalysis(data, field, wrapperId) {
+// --- 구간별 분석 공통 함수 ---
+function renderRangeAnalysis(data, field, wrapperId, thresholds) {
   const wrap = document.getElementById(wrapperId);
-  const filtered = data.filter(d => d[field]);
+  const filtered = data.filter(d => d[field] != null);
+  if (!filtered.length) {
+    wrap.innerHTML = '<div class="empty-state" style="grid-column:1/-1;">데이터가 필요합니다.</div>';
+    return;
+  }
+
+  // 구간 생성: ~-2%, -2~-1%, -1~0%, 0~1%, 1~2%, 2%~
+  const bins = [];
+  bins.push({ label: `~${thresholds[0]}%`, min: -Infinity, max: thresholds[0] });
+  for (let i = 0; i < thresholds.length - 1; i++) {
+    bins.push({ label: `${thresholds[i]}~${thresholds[i+1]}%`, min: thresholds[i], max: thresholds[i+1] });
+  }
+  bins.push({ label: `${thresholds[thresholds.length-1]}%~`, min: thresholds[thresholds.length-1], max: Infinity });
+
+  const groups = bins.map(() => []);
+  filtered.forEach(d => {
+    const v = d[field];
+    for (let i = 0; i < bins.length; i++) {
+      if (v >= bins[i].min && v < bins[i].max) { groups[i].push(d); break; }
+      if (i === bins.length - 1) groups[i].push(d);
+    }
+  });
+
+  wrap.innerHTML = bins.map((bin, i) => {
+    const arr = groups[i];
+    const total = arr.length;
+    if (!total) return `<div class="cond-card"><div class="cond-name">${bin.label}</div><div class="cond-winrate" style="color:#52525b;">-</div><div class="cond-stat">0회</div></div>`;
+    const wins = arr.filter(t => t.pnl > 0).length;
+    const winRate = (wins / total * 100);
+    const avgRet = arr.reduce((s, t) => s + t.returnPct, 0) / total;
+    const totalPnl = arr.reduce((s, t) => s + t.pnl, 0);
+    const cls = avgRet >= 0 ? 'profit' : 'loss';
+    return `<div class="cond-card">
+      <div class="cond-name">${bin.label}</div>
+      <div class="cond-winrate ${cls}">${winRate.toFixed(0)}%</div>
+      <div class="cond-stat">
+        ${total}회 (${wins}승 ${total-wins}패)<br>
+        평균 <span class="${cls}">${fmtPct(avgRet)}</span><br>
+        합계 <span class="${cls}">${totalPnl>=0?'+':''}${fmt(totalPnl)}원</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// --- 환율 구간별 분석 ---
+function renderFxAnalysis(data) {
+  const wrap = document.getElementById('fxAnalysis');
+  const filtered = data.filter(d => d.fx != null);
+  if (!filtered.length) {
+    wrap.innerHTML = '<div class="empty-state" style="grid-column:1/-1;">데이터가 필요합니다.</div>';
+    return;
+  }
+  const bins = [
+    { label: '~1300원', min: 0, max: 1300 },
+    { label: '1300~1350', min: 1300, max: 1350 },
+    { label: '1350~1400', min: 1350, max: 1400 },
+    { label: '1400~1450', min: 1400, max: 1450 },
+    { label: '1450원~', min: 1450, max: Infinity },
+  ];
+  const groups = bins.map(() => []);
+  filtered.forEach(d => {
+    for (let i = 0; i < bins.length; i++) {
+      if (d.fx >= bins[i].min && d.fx < bins[i].max) { groups[i].push(d); break; }
+      if (i === bins.length - 1) groups[i].push(d);
+    }
+  });
+  wrap.innerHTML = bins.map((bin, i) => {
+    const arr = groups[i];
+    const total = arr.length;
+    if (!total) return `<div class="cond-card"><div class="cond-name">${bin.label}</div><div class="cond-winrate" style="color:#52525b;">-</div><div class="cond-stat">0회</div></div>`;
+    const wins = arr.filter(t => t.pnl > 0).length;
+    const winRate = (wins / total * 100);
+    const avgRet = arr.reduce((s, t) => s + t.returnPct, 0) / total;
+    const totalPnl = arr.reduce((s, t) => s + t.pnl, 0);
+    const cls = avgRet >= 0 ? 'profit' : 'loss';
+    return `<div class="cond-card">
+      <div class="cond-name">${bin.label}</div>
+      <div class="cond-winrate ${cls}">${winRate.toFixed(0)}%</div>
+      <div class="cond-stat">
+        ${total}회 (${wins}승 ${total-wins}패)<br>
+        평균 <span class="${cls}">${fmtPct(avgRet)}</span><br>
+        합계 <span class="${cls}">${totalPnl>=0?'+':''}${fmt(totalPnl)}원</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// --- 업종별 분석 ---
+function renderSectorAnalysis(data) {
+  const wrap = document.getElementById('sectorAnalysis');
+  const filtered = data.filter(d => d.sector);
   if (!filtered.length) {
     wrap.innerHTML = '<div class="empty-state" style="grid-column:1/-1;">데이터가 필요합니다.</div>';
     return;
   }
   const groups = {};
   filtered.forEach(d => {
-    const key = d[field];
-    if (!groups[key]) groups[key] = [];
-    groups[key].push(d);
+    if (!groups[d.sector]) groups[d.sector] = [];
+    groups[d.sector].push(d);
   });
   const sorted = Object.entries(groups).sort((a, b) => b[1].length - a[1].length);
   wrap.innerHTML = sorted.map(([name, trades]) => {
@@ -1234,10 +1373,6 @@ function renderCondAnalysis(data, field, wrapperId) {
     </div>`;
   }).join('');
 }
-
-function renderMarketAnalysis(data) { renderCondAnalysis(data, 'market', 'marketAnalysis'); }
-function renderSectorAnalysis(data) { renderCondAnalysis(data, 'sector', 'sectorAnalysis'); }
-function renderGapAnalysis(data) { renderCondAnalysis(data, 'gap', 'gapAnalysis'); }
 
 // --- 월별 계절성 차트 (내 전략 vs KOSPI·KOSDAQ 과거 평균) ---
 let seasonalChartInstance = null;
