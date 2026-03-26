@@ -714,14 +714,11 @@ async function loadTrades() {
 async function saveTrades(trades) {
   saveTradesLocal(trades); // 즉시 로컬 저장 (UI 빠른 반영)
   if (!USE_CLOUD) return;
-  try {
-    await fetch(`${APPS_SCRIPT_URL}?pw=${encodeURIComponent(APPS_SCRIPT_PW)}`, {
-      method: 'POST',
-      body: JSON.stringify({ trades }),
-    });
-  } catch (err) {
-    console.warn('Google Sheets 저장 실패:', err);
-  }
+  // 백그라운드로 Sheets 저장 (UI 안 막음)
+  fetch(`${APPS_SCRIPT_URL}?pw=${encodeURIComponent(APPS_SCRIPT_PW)}`, {
+    method: 'POST',
+    body: JSON.stringify({ trades }),
+  }).catch(err => console.warn('Google Sheets 저장 실패:', err));
 }
 
 // --- 계산 ---
@@ -776,7 +773,7 @@ async function addTrade() {
     return;
   }
 
-  const trades = await loadTrades();
+  const trades = loadTradesLocal();
 
   // 같은 날 중복 매매 차단
   const sameDayTrade = trades.find(t => t.date === date);
@@ -793,8 +790,8 @@ async function addTrade() {
   const gap = parseFloat(document.getElementById('inputGap').value) || null;
   trades.push({ date, stock, buyPrice, sellPrice, memo, kospi, kosdaq, nasdaq, fx, sector, gap });
   trades.sort((a, b) => a.date.localeCompare(b.date));
-  await saveTrades(trades);
-  await renderAll();
+  saveTrades(trades);
+  renderAllLocal();
 
   document.getElementById('inputStock').value = '';
   document.getElementById('inputBuyPrice').value = '';
@@ -811,15 +808,15 @@ async function addTrade() {
 // --- 삭제 ---
 async function deleteTrade(idx) {
   if (!confirm('이 거래를 삭제할까요?')) return;
-  const trades = await loadTrades();
+  const trades = loadTradesLocal();
   trades.splice(idx, 1);
-  await saveTrades(trades);
-  await renderAll();
+  saveTrades(trades);
+  renderAllLocal();
 }
 
 // --- 수정 모달 ---
-async function openEditModal(idx) {
-  const trades = await loadTrades();
+function openEditModal(idx) {
+  const trades = loadTradesLocal();
   const t = trades[idx];
   document.getElementById('editIndex').value = idx;
   document.getElementById('editDate').value = t.date;
@@ -838,9 +835,9 @@ async function openEditModal(idx) {
 function closeEditModal() {
   document.getElementById('editModal').classList.remove('active');
 }
-async function saveEdit() {
+function saveEdit() {
   const idx = parseInt(document.getElementById('editIndex').value);
-  const trades = await loadTrades();
+  const trades = loadTradesLocal();
   trades[idx] = {
     date: document.getElementById('editDate').value,
     stock: document.getElementById('editStock').value.trim(),
@@ -855,14 +852,14 @@ async function saveEdit() {
     memo: document.getElementById('editMemo').value.trim(),
   };
   trades.sort((a, b) => a.date.localeCompare(b.date));
-  await saveTrades(trades);
+  saveTrades(trades);
   closeEditModal();
-  await renderAll();
+  renderAllLocal();
 }
 
 // --- CSV 내보내기 ---
-async function exportCSV() {
-  const trades = await loadTrades();
+function exportCSV() {
+  const trades = loadTradesLocal();
   if (!trades.length) { alert('내보낼 데이터가 없습니다.'); return; }
   const calculated = calcAllTrades(trades);
   const bom = '\uFEFF';
@@ -904,11 +901,11 @@ function importCSV(event) {
     }
     if (!trades.length) { alert('가져올 데이터가 없습니다.'); return; }
     if (!confirm(`${trades.length}건의 거래를 가져옵니다. 기존 데이터에 추가됩니다.`)) return;
-    const existing = await loadTrades();
+    const existing = loadTradesLocal();
     const merged = [...existing, ...trades];
     merged.sort((a, b) => a.date.localeCompare(b.date));
-    await saveTrades(merged);
-    await renderAll();
+    saveTrades(merged);
+    renderAllLocal();
     alert(`${trades.length}건 가져오기 완료!`);
   };
   reader.readAsText(file);
@@ -916,6 +913,30 @@ function importCSV(event) {
 }
 
 // ===== 렌더링 =====
+// localStorage에서 즉시 렌더링 (조작 시 사용)
+function renderAllLocal() {
+  const trades = loadTradesLocal();
+  const calculated = calcAllTrades(trades);
+  renderTodayBanner(trades);
+  renderTable(calculated);
+  renderStats(calculated);
+  renderMonthlyChart(calculated);
+  renderWeeklyChart(calculated);
+  renderDayAnalysis(calculated);
+  renderHistogram(calculated);
+  renderStockAnalysis(calculated);
+  renderRangeAnalysis(calculated, 'kospi', 'kospiAnalysis', [-2,-1,0,1,2]);
+  renderRangeAnalysis(calculated, 'kosdaq', 'kosdaqAnalysis', [-2,-1,0,1,2]);
+  renderRangeAnalysis(calculated, 'nasdaq', 'nasdaqAnalysis', [-2,-1,0,1,2]);
+  renderFxAnalysis(calculated);
+  renderSectorAnalysis(calculated);
+  renderRangeAnalysis(calculated, 'gap', 'gapAnalysis', [-2,-1,0,1,2]);
+  renderSeasonalChart(calculated);
+  renderWeekdayRefChart(calculated);
+  renderReport(calculated);
+}
+
+// 초기 로딩 시 Google Sheets에서 가져옴
 async function renderAll() {
   const trades = await loadTrades();
   const calculated = calcAllTrades(trades);
