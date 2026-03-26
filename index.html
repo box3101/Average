@@ -771,8 +771,8 @@ async function addTrade() {
   const sellPrice = parseInt(document.getElementById('inputSellPrice').value);
   const memo = document.getElementById('inputMemo').value.trim();
 
-  if (!date || !stock || !buyPrice || !sellPrice) {
-    alert('날짜, 종목, 매수가, 매도가를 모두 입력하세요.');
+  if (!date || !stock || !buyPrice) {
+    alert('날짜, 종목, 매수가를 입력하세요.');
     return;
   }
 
