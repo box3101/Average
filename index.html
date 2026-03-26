@@ -355,7 +355,7 @@
 <script>
 const INITIAL_BALANCE = 12000000;
 const TAX_RATE = 0.0018;
-const FEE_RATE = 0.002;
+const FEE_RATE = 0.002; // 수수료 0.2% (매도 시 1회만)
 const STORAGE_KEY = 'foreign_follow_trades';
 
 // --- 데이터 ---
@@ -373,14 +373,13 @@ function calcTrade(trade, prevBalance) {
   const qty = Math.floor(balance / trade.buyPrice);
   const buyAmt = trade.buyPrice * qty;
   const sellAmt = trade.sellPrice * qty;
-  const buyFee = Math.round(buyAmt * FEE_RATE);
-  const sellFee = Math.round(sellAmt * FEE_RATE);
+  const fee = Math.round(sellAmt * FEE_RATE);
   const tax = Math.round(sellAmt * TAX_RATE);
-  const totalCost = buyFee + sellFee + tax;
+  const totalCost = fee + tax;
   const pnl = sellAmt - buyAmt - totalCost;
   const returnPct = buyAmt > 0 ? (pnl / buyAmt * 100) : 0;
   const newBalance = balance + pnl;
-  return { qty, buyAmt, sellAmt, buyFee, sellFee, tax, totalCost, pnl, returnPct, newBalance };
+  return { qty, buyAmt, sellAmt, fee, tax, totalCost, pnl, returnPct, newBalance };
 }
 
 function calcAllTrades(trades) {
@@ -467,7 +466,7 @@ function exportCSV() {
   const bom = '\uFEFF';
   let csv = bom + '날짜,종목,매수가,매도가,수량,매수금액,매도금액,수수료,세금,손익,수익률(%),누적잔고\n';
   calculated.forEach(r => {
-    csv += `${r.date},${r.stock},${r.buyPrice},${r.sellPrice},${r.qty},${r.buyAmt},${r.sellAmt},${r.buyFee + r.sellFee},${r.tax},${r.pnl},${r.returnPct.toFixed(2)},${r.newBalance}\n`;
+    csv += `${r.date},${r.stock},${r.buyPrice},${r.sellPrice},${r.qty},${r.buyAmt},${r.sellAmt},${r.fee},${r.tax},${r.pnl},${r.returnPct.toFixed(2)},${r.newBalance}\n`;
   });
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const a = document.createElement('a');
@@ -535,7 +534,7 @@ function renderTable(data) {
       <td class="text-right num">${fmt(r.buyAmt)}</td>
       <td class="text-right num">${fmt(r.sellPrice)}</td>
       <td class="text-right num">${fmt(r.sellAmt)}</td>
-      <td class="text-right num">${fmt(r.buyFee + r.sellFee)}</td>
+      <td class="text-right num">${fmt(r.fee)}</td>
       <td class="text-right num">${fmt(r.tax)}</td>
       <td class="text-right num ${cls}">${r.pnl >= 0 ? '+' : ''}${fmt(r.pnl)}</td>
       <td class="text-right num ${cls}">${fmtPct(r.returnPct)}</td>
