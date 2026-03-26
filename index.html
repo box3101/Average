@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>외국인 따라매매 대시보드</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Pretendard', -apple-system, 'Malgun Gothic', sans-serif;
+    background: #0f1117;
+    color: #e4e4e7;
+    min-height: 100vh;
+    padding: 20px;
+  }
+  h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
+  h2 { font-size: 18px; font-weight: 600; margin-bottom: 12px; color: #a1a1aa; }
+  h3 { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
+
+  .header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 24px; flex-wrap: wrap; gap: 12px;
+  }
+  .header-left h1 span { color: #3b82f6; }
+  .header-right { display: flex; gap: 8px; }
+
+  .btn {
+    padding: 8px 16px; border: none; border-radius: 8px;
+    font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s;
+  }
+  .btn-primary { background: #3b82f6; color: #fff; }
+  .btn-primary:hover { background: #2563eb; }
+  .btn-outline { background: transparent; border: 1px solid #3f3f46; color: #a1a1aa; }
+  .btn-outline:hover { border-color: #3b82f6; color: #3b82f6; }
+  .btn-danger { background: #dc2626; color: #fff; }
+  .btn-danger:hover { background: #b91c1c; }
+  .btn-sm { padding: 4px 10px; font-size: 12px; }
+
+  .grid { display: grid; gap: 16px; margin-bottom: 24px; }
+  .grid-2 { grid-template-columns: 1fr 1fr; }
+  .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .grid-5 { grid-template-columns: repeat(5, 1fr); }
+
+  .card {
+    background: #18181b; border: 1px solid #27272a; border-radius: 12px; padding: 20px;
+  }
+
+  /* 룰 카드 */
+  .rule-timeline { display: flex; gap: 12px; flex-wrap: wrap; }
+  .rule-step {
+    flex: 1; min-width: 160px; background: #1f1f23; border-radius: 8px;
+    padding: 14px; position: relative;
+  }
+  .rule-step .time {
+    font-size: 12px; font-weight: 700; color: #3b82f6;
+    margin-bottom: 6px; display: block;
+  }
+  .rule-step .desc { font-size: 13px; color: #a1a1aa; line-height: 1.5; }
+  .rule-step::after {
+    content: '→'; position: absolute; right: -10px; top: 50%;
+    transform: translateY(-50%); color: #3f3f46; font-size: 14px;
+  }
+  .rule-step:last-child::after { display: none; }
+
+  .absolute-rules {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+    margin-top: 14px; padding-top: 14px; border-top: 1px solid #27272a;
+  }
+  .absolute-rules li {
+    list-style: none; font-size: 13px; color: #f87171; padding-left: 18px;
+    position: relative; line-height: 1.6;
+  }
+  .absolute-rules li::before {
+    content: '✕'; position: absolute; left: 0; color: #dc2626; font-size: 11px; top: 2px;
+  }
+
+  /* 통계 카드 */
+  .stat-card {
+    background: #18181b; border: 1px solid #27272a; border-radius: 12px;
+    padding: 16px; text-align: center;
+  }
+  .stat-label { font-size: 12px; color: #71717a; margin-bottom: 6px; }
+  .stat-value { font-size: 22px; font-weight: 700; }
+  .stat-sub { font-size: 11px; color: #71717a; margin-top: 4px; }
+  .profit { color: #3b82f6; }
+  .loss { color: #ef4444; }
+
+  /* 입력 폼 */
+  .form-grid { display: grid; grid-template-columns: repeat(4, 1fr) auto; gap: 10px; align-items: end; }
+  .form-group label {
+    display: block; font-size: 12px; color: #71717a; margin-bottom: 4px;
+  }
+  .form-group input {
+    width: 100%; padding: 8px 12px; background: #1f1f23; border: 1px solid #3f3f46;
+    border-radius: 8px; color: #e4e4e7; font-size: 14px; outline: none;
+  }
+  .form-group input:focus { border-color: #3b82f6; }
+  .form-group input::placeholder { color: #52525b; }
+
+  /* 테이블 */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th {
+    text-align: left; padding: 10px 12px; color: #71717a; font-weight: 500;
+    border-bottom: 1px solid #27272a; font-size: 12px; white-space: nowrap;
+  }
+  tbody td {
+    padding: 10px 12px; border-bottom: 1px solid #1f1f23; white-space: nowrap;
+  }
+  tbody tr:hover { background: #1f1f23; }
+  .text-right { text-align: right; }
+  .text-center { text-align: center; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  /* 차트 */
+  .chart-wrap { position: relative; height: 280px; }
+
+  /* 점검 리포트 */
+  .report-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .report-item { text-align: center; padding: 16px; background: #1f1f23; border-radius: 8px; }
+  .report-item .label { font-size: 12px; color: #71717a; margin-bottom: 8px; }
+  .report-item .value { font-size: 20px; font-weight: 700; }
+
+  /* 모달 */
+  .modal-overlay {
+    display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.6); z-index: 100; align-items: center; justify-content: center;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: #18181b; border: 1px solid #27272a; border-radius: 12px;
+    padding: 24px; width: 400px; max-width: 90vw;
+  }
+  .modal h3 { margin-bottom: 16px; }
+  .modal .form-group { margin-bottom: 12px; }
+  .modal .form-group input { width: 100%; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+
+  .empty-state {
+    text-align: center; padding: 40px; color: #52525b; font-size: 14px;
+  }
+
+  @media (max-width: 768px) {
+    .grid-2, .grid-3, .grid-5 { grid-template-columns: 1fr; }
+    .form-grid { grid-template-columns: 1fr 1fr; }
+    .report-grid { grid-template-columns: 1fr; }
+    .absolute-rules { grid-template-columns: 1fr; }
+    .rule-timeline { flex-direction: column; }
+    .rule-step::after { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- 헤더 -->
+<div class="header">
+  <div class="header-left">
+    <h1>📈 외국인 <span>따라매매</span> 대시보드</h1>
+    <h2>토스증권 · 자본금 1,200만원 · 수수료 0원 · 세금 0.18%</h2>
+  </div>
+  <div class="header-right">
+    <button class="btn btn-outline" onclick="exportCSV()">CSV 내보내기</button>
+    <label class="btn btn-outline" style="cursor:pointer;">
+      CSV 가져오기
+      <input type="file" accept=".csv" onchange="importCSV(event)" style="display:none;">
+    </label>
+  </div>
+</div>
+
+<!-- ① 룰 카드 -->
+<div class="card" style="margin-bottom:24px;">
+  <h3>📋 매매 절차</h3>
+  <div class="rule-timeline" style="margin-top:12px;">
+    <div class="rule-step">
+      <span class="time">오후 3:30</span>
+      <span class="desc">토스 → 투자자 동향<br>외국인 순매수 1위 확인<br>(ETF·300만↑ 패스)</span>
+    </div>
+    <div class="rule-step">
+      <span class="time">오후 3:40~4:00</span>
+      <span class="desc">해당 종목 지정가 매수<br>종가 입력, 전액 투입</span>
+    </div>
+    <div class="rule-step">
+      <span class="time">그날 밤</span>
+      <span class="desc">내일 아침 8:50<br>알람 설정</span>
+    </div>
+    <div class="rule-step">
+      <span class="time">다음날 8:50</span>
+      <span class="desc">시장가 매도<br>9시 시초가 체결 확인</span>
+    </div>
+    <div class="rule-step">
+      <span class="time">오후 3:30</span>
+      <span class="desc">다시 1번부터<br>반복</span>
+    </div>
+  </div>
+  <ul class="absolute-rules">
+    <li>시초가에 무조건 판다. "더 오를 것 같은데" 금지</li>
+    <li>ETF 절대 안 산다</li>
+    <li>하루 한 종목, 전액만</li>
+    <li>3번 연속 손실이어도 계속한다</li>
+    <li>9시에 팔고 3시30분까지 앱 안 본다</li>
+    <li>못 하는 날 → 전날 안 사면 됨</li>
+  </ul>
+</div>
+
+<!-- ⑤ 핵심 통계 -->
+<div class="grid grid-5" id="statsGrid">
+  <div class="stat-card">
+    <div class="stat-label">누적 잔고</div>
+    <div class="stat-value" id="statBalance">₩12,000,000</div>
+    <div class="stat-sub" id="statBalanceSub">시작 1,200만</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">총 거래일</div>
+    <div class="stat-value" id="statDays">0일</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">승률</div>
+    <div class="stat-value" id="statWinRate">-</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">평균 수익률</div>
+    <div class="stat-value" id="statAvgReturn">-</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">최대 이익 / 손실</div>
+    <div class="stat-value" id="statMaxPL">- / -</div>
+  </div>
+</div>
+
+<!-- ② 거래 입력 폼 -->
+<div class="card" style="margin-top:24px;">
+  <h3>➕ 거래 입력</h3>
+  <div class="form-grid" style="margin-top:12px;">
+    <div class="form-group">
+      <label>날짜</label>
+      <input type="date" id="inputDate">
+    </div>
+    <div class="form-group">
+      <label>종목명</label>
+      <input type="text" id="inputStock" placeholder="삼성전자">
+    </div>
+    <div class="form-group">
+      <label>매수가</label>
+      <input type="number" id="inputBuyPrice" placeholder="55,000">
+    </div>
+    <div class="form-group">
+      <label>매도가</label>
+      <input type="number" id="inputSellPrice" placeholder="56,200">
+    </div>
+    <div>
+      <button class="btn btn-primary" onclick="addTrade()" style="height:37px;">추가</button>
+    </div>
+  </div>
+</div>
+
+<!-- ④ 거래 기록 테이블 -->
+<div class="card" style="margin-top:24px;">
+  <h3>📊 거래 기록</h3>
+  <div class="table-wrap" style="margin-top:12px;">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>날짜</th>
+          <th>종목</th>
+          <th class="text-right">매수가</th>
+          <th class="text-right">수량</th>
+          <th class="text-right">매수금액</th>
+          <th class="text-right">매도가</th>
+          <th class="text-right">매도금액</th>
+          <th class="text-right">세금</th>
+          <th class="text-right">손익</th>
+          <th class="text-right">수익률</th>
+          <th class="text-right">누적잔고</th>
+          <th class="text-center">관리</th>
+        </tr>
+      </thead>
+      <tbody id="tradeBody">
+        <tr><td colspan="13" class="empty-state">거래 기록이 없습니다. 첫 거래를 입력하세요.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ⑥ 월별 수익 차트 -->
+<div class="card" style="margin-top:24px;">
+  <h3>📈 월별 수익</h3>
+  <div class="chart-wrap" style="margin-top:12px;">
+    <canvas id="monthlyChart"></canvas>
+  </div>
+</div>
+
+<!-- ⑦ 3개월 점검 리포트 -->
+<div class="card" style="margin-top:24px;">
+  <h3>🔍 3개월 점검 리포트</h3>
+  <div class="report-grid" style="margin-top:12px;">
+    <div class="report-item">
+      <div class="label">시작 잔고</div>
+      <div class="value">₩12,000,000</div>
+    </div>
+    <div class="report-item">
+      <div class="label">현재 잔고</div>
+      <div class="value" id="reportCurrent">₩12,000,000</div>
+    </div>
+    <div class="report-item">
+      <div class="label">총 손익</div>
+      <div class="value" id="reportPL">₩0</div>
+    </div>
+    <div class="report-item">
+      <div class="label">연 환산 수익</div>
+      <div class="value" id="reportAnnual">-</div>
+    </div>
+    <div class="report-item">
+      <div class="label">목표 달성률</div>
+      <div class="value" id="reportGoal">-</div>
+      <div class="stat-sub">연 목표 +384~600만</div>
+    </div>
+    <div class="report-item">
+      <div class="label">최장 연속 손실</div>
+      <div class="value" id="reportMaxLoss">0일</div>
+    </div>
+  </div>
+</div>
+
+<!-- 수정 모달 -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <h3>거래 수정</h3>
+    <input type="hidden" id="editIndex">
+    <div class="form-group">
+      <label>날짜</label>
+      <input type="date" id="editDate">
+    </div>
+    <div class="form-group">
+      <label>종목명</label>
+      <input type="text" id="editStock">
+    </div>
+    <div class="form-group">
+      <label>매수가</label>
+      <input type="number" id="editBuyPrice">
+    </div>
+    <div class="form-group">
+      <label>매도가</label>
+      <input type="number" id="editSellPrice">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeEditModal()">취소</button>
+      <button class="btn btn-primary" onclick="saveEdit()">저장</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const INITIAL_BALANCE = 12000000;
+const TAX_RATE = 0.0018;
+const STORAGE_KEY = 'foreign_follow_trades';
+
+// --- 데이터 ---
+function loadTrades() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+  catch { return []; }
+}
+function saveTrades(trades) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(trades));
+}
+
+// --- 계산 ---
+function calcTrade(trade, prevBalance) {
+  const balance = prevBalance;
+  const qty = Math.floor(balance / trade.buyPrice);
+  const buyAmt = trade.buyPrice * qty;
+  const sellAmt = trade.sellPrice * qty;
+  const tax = Math.round(sellAmt * TAX_RATE);
+  const pnl = sellAmt - buyAmt - tax;
+  const returnPct = buyAmt > 0 ? (pnl / buyAmt * 100) : 0;
+  const newBalance = balance + pnl;
+  return { qty, buyAmt, sellAmt, tax, pnl, returnPct, newBalance };
+}
+
+function calcAllTrades(trades) {
+  let balance = INITIAL_BALANCE;
+  return trades.map(t => {
+    const c = calcTrade(t, balance);
+    balance = c.newBalance;
+    return { ...t, ...c };
+  });
+}
+
+// --- 포맷 ---
+function fmt(n) { return n.toLocaleString('ko-KR'); }
+function fmtWon(n) { return '₩' + fmt(n); }
+function fmtPct(n) { return (n >= 0 ? '+' : '') + n.toFixed(2) + '%'; }
+
+// --- 거래 추가 ---
+function addTrade() {
+  const date = document.getElementById('inputDate').value;
+  const stock = document.getElementById('inputStock').value.trim();
+  const buyPrice = parseInt(document.getElementById('inputBuyPrice').value);
+  const sellPrice = parseInt(document.getElementById('inputSellPrice').value);
+
+  if (!date || !stock || !buyPrice || !sellPrice) {
+    alert('모든 항목을 입력하세요.');
+    return;
+  }
+
+  const trades = loadTrades();
+  trades.push({ date, stock, buyPrice, sellPrice });
+  trades.sort((a, b) => a.date.localeCompare(b.date));
+  saveTrades(trades);
+  renderAll();
+
+  // 폼 초기화
+  document.getElementById('inputStock').value = '';
+  document.getElementById('inputBuyPrice').value = '';
+  document.getElementById('inputSellPrice').value = '';
+}
+
+// --- 삭제 ---
+function deleteTrade(idx) {
+  if (!confirm('이 거래를 삭제할까요?')) return;
+  const trades = loadTrades();
+  trades.splice(idx, 1);
+  saveTrades(trades);
+  renderAll();
+}
+
+// --- 수정 모달 ---
+function openEditModal(idx) {
+  const trades = loadTrades();
+  const t = trades[idx];
+  document.getElementById('editIndex').value = idx;
+  document.getElementById('editDate').value = t.date;
+  document.getElementById('editStock').value = t.stock;
+  document.getElementById('editBuyPrice').value = t.buyPrice;
+  document.getElementById('editSellPrice').value = t.sellPrice;
+  document.getElementById('editModal').classList.add('active');
+}
+function closeEditModal() {
+  document.getElementById('editModal').classList.remove('active');
+}
+function saveEdit() {
+  const idx = parseInt(document.getElementById('editIndex').value);
+  const trades = loadTrades();
+  trades[idx] = {
+    date: document.getElementById('editDate').value,
+    stock: document.getElementById('editStock').value.trim(),
+    buyPrice: parseInt(document.getElementById('editBuyPrice').value),
+    sellPrice: parseInt(document.getElementById('editSellPrice').value),
+  };
+  trades.sort((a, b) => a.date.localeCompare(b.date));
+  saveTrades(trades);
+  closeEditModal();
+  renderAll();
+}
+
+// --- CSV 내보내기 ---
+function exportCSV() {
+  const trades = loadTrades();
+  if (!trades.length) { alert('내보낼 데이터가 없습니다.'); return; }
+  const calculated = calcAllTrades(trades);
+  const bom = '\uFEFF';
+  let csv = bom + '날짜,종목,매수가,매도가,수량,매수금액,매도금액,세금,손익,수익률(%),누적잔고\n';
+  calculated.forEach(r => {
+    csv += `${r.date},${r.stock},${r.buyPrice},${r.sellPrice},${r.qty},${r.buyAmt},${r.sellAmt},${r.tax},${r.pnl},${r.returnPct.toFixed(2)},${r.newBalance}\n`;
+  });
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `외국인따라매매_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+// --- CSV 가져오기 ---
+function importCSV(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const lines = e.target.result.split('\n').filter(l => l.trim());
+    if (lines.length < 2) { alert('유효한 CSV가 아닙니다.'); return; }
+    const trades = [];
+    for (let i = 1; i < lines.length; i++) {
+      const cols = lines[i].split(',');
+      if (cols.length < 4) continue;
+      trades.push({
+        date: cols[0].trim(),
+        stock: cols[1].trim(),
+        buyPrice: parseInt(cols[2]),
+        sellPrice: parseInt(cols[3]),
+      });
+    }
+    if (!trades.length) { alert('가져올 데이터가 없습니다.'); return; }
+    if (!confirm(`${trades.length}건의 거래를 가져옵니다. 기존 데이터에 추가됩니다.`)) return;
+    const existing = loadTrades();
+    const merged = [...existing, ...trades];
+    merged.sort((a, b) => a.date.localeCompare(b.date));
+    saveTrades(merged);
+    renderAll();
+    alert(`${trades.length}건 가져오기 완료!`);
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// --- 렌더링 ---
+function renderAll() {
+  const trades = loadTrades();
+  const calculated = calcAllTrades(trades);
+  renderTable(calculated);
+  renderStats(calculated);
+  renderChart(calculated);
+  renderReport(calculated);
+}
+
+function renderTable(data) {
+  const tbody = document.getElementById('tradeBody');
+  if (!data.length) {
+    tbody.innerHTML = '<tr><td colspan="13" class="empty-state">거래 기록이 없습니다. 첫 거래를 입력하세요.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = data.map((r, i) => {
+    const cls = r.pnl >= 0 ? 'profit' : 'loss';
+    return `<tr>
+      <td class="num">${i + 1}</td>
+      <td>${r.date}</td>
+      <td>${r.stock}</td>
+      <td class="text-right num">${fmt(r.buyPrice)}</td>
+      <td class="text-right num">${fmt(r.qty)}</td>
+      <td class="text-right num">${fmt(r.buyAmt)}</td>
+      <td class="text-right num">${fmt(r.sellPrice)}</td>
+      <td class="text-right num">${fmt(r.sellAmt)}</td>
+      <td class="text-right num">${fmt(r.tax)}</td>
+      <td class="text-right num ${cls}">${r.pnl >= 0 ? '+' : ''}${fmt(r.pnl)}</td>
+      <td class="text-right num ${cls}">${fmtPct(r.returnPct)}</td>
+      <td class="text-right num">${fmt(r.newBalance)}</td>
+      <td class="text-center">
+        <button class="btn btn-outline btn-sm" onclick="openEditModal(${i})">수정</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteTrade(${i})">삭제</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function renderStats(data) {
+  const n = data.length;
+  const lastBalance = n ? data[n - 1].newBalance : INITIAL_BALANCE;
+  const totalPL = lastBalance - INITIAL_BALANCE;
+  const wins = data.filter(d => d.pnl > 0).length;
+  const avgReturn = n ? data.reduce((s, d) => s + d.returnPct, 0) / n : 0;
+  const maxProfit = n ? Math.max(...data.map(d => d.pnl)) : 0;
+  const maxLoss = n ? Math.min(...data.map(d => d.pnl)) : 0;
+
+  const balCls = totalPL >= 0 ? 'profit' : 'loss';
+  document.getElementById('statBalance').className = `stat-value ${balCls}`;
+  document.getElementById('statBalance').textContent = fmtWon(lastBalance);
+  document.getElementById('statBalanceSub').textContent = `${totalPL >= 0 ? '+' : ''}${fmt(totalPL)}원`;
+
+  document.getElementById('statDays').textContent = n + '일';
+
+  const winRate = n ? (wins / n * 100) : 0;
+  document.getElementById('statWinRate').textContent = n ? winRate.toFixed(1) + '%' : '-';
+  document.getElementById('statWinRate').className = `stat-value ${winRate >= 50 ? 'profit' : 'loss'}`;
+
+  document.getElementById('statAvgReturn').textContent = n ? fmtPct(avgReturn) : '-';
+  document.getElementById('statAvgReturn').className = `stat-value ${avgReturn >= 0 ? 'profit' : 'loss'}`;
+
+  document.getElementById('statMaxPL').innerHTML = n
+    ? `<span class="profit">+${fmt(maxProfit)}</span> / <span class="loss">${fmt(maxLoss)}</span>`
+    : '- / -';
+}
+
+let chartInstance = null;
+function renderChart(data) {
+  if (!data.length) {
+    if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+    return;
+  }
+
+  // 월별 집계
+  const monthly = {};
+  data.forEach(d => {
+    const key = d.date.slice(0, 7); // YYYY-MM
+    monthly[key] = (monthly[key] || 0) + d.pnl;
+  });
+  const labels = Object.keys(monthly).sort();
+  const values = labels.map(k => monthly[k]);
+
+  const ctx = document.getElementById('monthlyChart').getContext('2d');
+  if (chartInstance) chartInstance.destroy();
+
+  chartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels.map(l => l.replace('-', '.')),
+      datasets: [{
+        label: '월 손익',
+        data: values,
+        backgroundColor: values.map(v => v >= 0 ? 'rgba(59,130,246,0.7)' : 'rgba(239,68,68,0.7)'),
+        borderRadius: 6,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => fmtWon(ctx.raw),
+          }
+        },
+        annotation: undefined,
+      },
+      scales: {
+        x: {
+          ticks: { color: '#71717a' },
+          grid: { display: false },
+        },
+        y: {
+          ticks: {
+            color: '#71717a',
+            callback: v => (v / 10000).toFixed(0) + '만',
+          },
+          grid: { color: '#27272a' },
+        }
+      }
+    }
+  });
+}
+
+function renderReport(data) {
+  const n = data.length;
+  const lastBalance = n ? data[n - 1].newBalance : INITIAL_BALANCE;
+  const totalPL = lastBalance - INITIAL_BALANCE;
+
+  // 현재 잔고
+  const curCls = totalPL >= 0 ? 'profit' : 'loss';
+  document.getElementById('reportCurrent').textContent = fmtWon(lastBalance);
+  document.getElementById('reportCurrent').className = `value ${curCls}`;
+
+  // 총 손익
+  document.getElementById('reportPL').textContent = (totalPL >= 0 ? '+' : '') + fmtWon(totalPL);
+  document.getElementById('reportPL').className = `value ${curCls}`;
+
+  // 연 환산
+  if (n >= 2) {
+    const firstDate = new Date(data[0].date);
+    const lastDate = new Date(data[n - 1].date);
+    const diffDays = Math.max((lastDate - firstDate) / 86400000, 1);
+    const annualized = totalPL / diffDays * 365;
+    const annCls = annualized >= 0 ? 'profit' : 'loss';
+    document.getElementById('reportAnnual').textContent = fmtWon(Math.round(annualized));
+    document.getElementById('reportAnnual').className = `value ${annCls}`;
+  } else {
+    document.getElementById('reportAnnual').textContent = '-';
+  }
+
+  // 목표 달성률 (연 목표 중간값 492만)
+  if (n >= 2) {
+    const firstDate = new Date(data[0].date);
+    const lastDate = new Date(data[n - 1].date);
+    const diffDays = Math.max((lastDate - firstDate) / 86400000, 1);
+    const expectedPL = 4920000 / 365 * diffDays;
+    const goalPct = (totalPL / expectedPL * 100);
+    const goalCls = goalPct >= 100 ? 'profit' : goalPct >= 50 ? '' : 'loss';
+    document.getElementById('reportGoal').textContent = goalPct.toFixed(1) + '%';
+    document.getElementById('reportGoal').className = `value ${goalCls}`;
+  } else {
+    document.getElementById('reportGoal').textContent = '-';
+  }
+
+  // 최장 연속 손실
+  let maxStreak = 0, streak = 0;
+  data.forEach(d => {
+    if (d.pnl < 0) { streak++; maxStreak = Math.max(maxStreak, streak); }
+    else { streak = 0; }
+  });
+  document.getElementById('reportMaxLoss').textContent = maxStreak + '일';
+  document.getElementById('reportMaxLoss').className = `value ${maxStreak >= 3 ? 'loss' : ''}`;
+}
+
+// --- 초기화 ---
+document.getElementById('inputDate').value = new Date().toISOString().slice(0, 10);
+renderAll();
+</script>
+</body>
+</html>
