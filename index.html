@@ -157,7 +157,7 @@
 <div class="header">
   <div class="header-left">
     <h1>📈 외국인 <span>따라매매</span> 대시보드</h1>
-    <h2>토스증권 · 자본금 1,200만원 · 수수료 0원 · 세금 0.18%</h2>
+    <h2>토스증권 · 자본금 1,200만원 · 수수료 0.2% · 세금 0.18%</h2>
   </div>
   <div class="header-right">
     <button class="btn btn-outline" onclick="exportCSV()">CSV 내보내기</button>
@@ -269,6 +269,7 @@
           <th class="text-right">매수금액</th>
           <th class="text-right">매도가</th>
           <th class="text-right">매도금액</th>
+          <th class="text-right">수수료</th>
           <th class="text-right">세금</th>
           <th class="text-right">손익</th>
           <th class="text-right">수익률</th>
@@ -277,7 +278,7 @@
         </tr>
       </thead>
       <tbody id="tradeBody">
-        <tr><td colspan="13" class="empty-state">거래 기록이 없습니다. 첫 거래를 입력하세요.</td></tr>
+        <tr><td colspan="14" class="empty-state">거래 기록이 없습니다. 첫 거래를 입력하세요.</td></tr>
       </tbody>
     </table>
   </div>
@@ -354,6 +355,7 @@
 <script>
 const INITIAL_BALANCE = 12000000;
 const TAX_RATE = 0.0018;
+const FEE_RATE = 0.002;
 const STORAGE_KEY = 'foreign_follow_trades';
 
 // --- 데이터 ---
@@ -371,11 +373,14 @@ function calcTrade(trade, prevBalance) {
   const qty = Math.floor(balance / trade.buyPrice);
   const buyAmt = trade.buyPrice * qty;
   const sellAmt = trade.sellPrice * qty;
+  const buyFee = Math.round(buyAmt * FEE_RATE);
+  const sellFee = Math.round(sellAmt * FEE_RATE);
   const tax = Math.round(sellAmt * TAX_RATE);
-  const pnl = sellAmt - buyAmt - tax;
+  const totalCost = buyFee + sellFee + tax;
+  const pnl = sellAmt - buyAmt - totalCost;
   const returnPct = buyAmt > 0 ? (pnl / buyAmt * 100) : 0;
   const newBalance = balance + pnl;
-  return { qty, buyAmt, sellAmt, tax, pnl, returnPct, newBalance };
+  return { qty, buyAmt, sellAmt, buyFee, sellFee, tax, totalCost, pnl, returnPct, newBalance };
 }
 
 function calcAllTrades(trades) {
@@ -460,9 +465,9 @@ function exportCSV() {
   if (!trades.length) { alert('내보낼 데이터가 없습니다.'); return; }
   const calculated = calcAllTrades(trades);
   const bom = '\uFEFF';
-  let csv = bom + '날짜,종목,매수가,매도가,수량,매수금액,매도금액,세금,손익,수익률(%),누적잔고\n';
+  let csv = bom + '날짜,종목,매수가,매도가,수량,매수금액,매도금액,수수료,세금,손익,수익률(%),누적잔고\n';
   calculated.forEach(r => {
-    csv += `${r.date},${r.stock},${r.buyPrice},${r.sellPrice},${r.qty},${r.buyAmt},${r.sellAmt},${r.tax},${r.pnl},${r.returnPct.toFixed(2)},${r.newBalance}\n`;
+    csv += `${r.date},${r.stock},${r.buyPrice},${r.sellPrice},${r.qty},${r.buyAmt},${r.sellAmt},${r.buyFee + r.sellFee},${r.tax},${r.pnl},${r.returnPct.toFixed(2)},${r.newBalance}\n`;
   });
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const a = document.createElement('a');
@@ -516,7 +521,7 @@ function renderAll() {
 function renderTable(data) {
   const tbody = document.getElementById('tradeBody');
   if (!data.length) {
-    tbody.innerHTML = '<tr><td colspan="13" class="empty-state">거래 기록이 없습니다. 첫 거래를 입력하세요.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="14" class="empty-state">거래 기록이 없습니다. 첫 거래를 입력하세요.</td></tr>';
     return;
   }
   tbody.innerHTML = data.map((r, i) => {
@@ -530,6 +535,7 @@ function renderTable(data) {
       <td class="text-right num">${fmt(r.buyAmt)}</td>
       <td class="text-right num">${fmt(r.sellPrice)}</td>
       <td class="text-right num">${fmt(r.sellAmt)}</td>
+      <td class="text-right num">${fmt(r.buyFee + r.sellFee)}</td>
       <td class="text-right num">${fmt(r.tax)}</td>
       <td class="text-right num ${cls}">${r.pnl >= 0 ? '+' : ''}${fmt(r.pnl)}</td>
       <td class="text-right num ${cls}">${fmtPct(r.returnPct)}</td>
