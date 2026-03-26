@@ -93,13 +93,14 @@
   .form-group label {
     display: block; font-size: 12px; color: #71717a; margin-bottom: 4px;
   }
-  .form-group input, .form-group textarea {
+  .form-group input, .form-group textarea, .form-group select {
     width: 100%; padding: 8px 12px; background: #1f1f23; border: 1px solid #3f3f46;
     border-radius: 8px; color: #e4e4e7; font-size: 14px; outline: none;
     font-family: inherit;
   }
-  .form-group input:focus, .form-group textarea:focus { border-color: #3b82f6; }
+  .form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: #3b82f6; }
   .form-group input::placeholder, .form-group textarea::placeholder { color: #52525b; }
+  .form-group select option { background: #1f1f23; color: #e4e4e7; }
 
   /* 테이블 */
   .table-wrap { overflow-x: auto; }
@@ -209,6 +210,16 @@
     letter-spacing: 1px;
   }
   .rule-warning span { color: #ef4444; font-size: 20px; }
+
+  /* 조건별 분석 카드 */
+  .cond-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+  .cond-card {
+    background: #1f1f23; border-radius: 8px; padding: 12px; text-align: center;
+  }
+  .cond-card .cond-name { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+  .cond-card .cond-winrate { font-size: 18px; font-weight: 700; margin: 4px 0; }
+  .cond-card .cond-stat { font-size: 11px; color: #a1a1aa; line-height: 1.7; }
+  .form-row-meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px; }
 
   @media (max-width: 768px) {
     .grid-2, .grid-3, .grid-5 { grid-template-columns: 1fr; }
@@ -336,10 +347,52 @@
     </div>
     <div></div>
   </div>
+  <div class="form-row-meta">
+    <div class="form-group">
+      <label>시장 상황</label>
+      <select id="inputMarket">
+        <option value="">선택</option>
+        <option value="상승">📈 상승</option>
+        <option value="하락">📉 하락</option>
+        <option value="횡보">➡️ 횡보</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>업종</label>
+      <select id="inputSector">
+        <option value="">선택</option>
+        <option value="반도체">반도체</option>
+        <option value="2차전지">2차전지</option>
+        <option value="바이오">바이오</option>
+        <option value="금융">금융</option>
+        <option value="자동차">자동차</option>
+        <option value="조선">조선</option>
+        <option value="철강">철강</option>
+        <option value="화학">화학</option>
+        <option value="IT">IT/소프트웨어</option>
+        <option value="에너지">에너지</option>
+        <option value="건설">건설</option>
+        <option value="유통">유통/소비재</option>
+        <option value="방산">방산</option>
+        <option value="엔터">엔터/미디어</option>
+        <option value="통신">통신</option>
+        <option value="기타">기타</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>갭 방향 (다음날 시초가)</label>
+      <select id="inputGap">
+        <option value="">선택</option>
+        <option value="갭상승">⬆️ 갭상승</option>
+        <option value="보합">➡️ 보합</option>
+        <option value="갭하락">⬇️ 갭하락</option>
+      </select>
+    </div>
+  </div>
   <div class="form-row-memo">
     <div class="form-group">
       <label>복기 메모</label>
-      <textarea id="inputMemo" rows="2" placeholder="ex) 갭상승으로 시초가 +2%, 외국인 매수세 강했음"></textarea>
+      <textarea id="inputMemo" rows="2" placeholder="ex) 외국인 매수세 강했고, 장 마감 직전 거래량 급증"></textarea>
     </div>
     <div>
       <button class="btn btn-primary" onclick="addTrade()" style="height:52px;">추가</button>
@@ -368,12 +421,15 @@
           <th class="text-right">손익</th>
           <th class="text-right">수익률</th>
           <th class="text-right">누적잔고</th>
+          <th>시장</th>
+          <th>업종</th>
+          <th>갭</th>
           <th>복기</th>
           <th class="text-center">관리</th>
         </tr>
       </thead>
       <tbody id="tradeBody">
-        <tr><td colspan="16" class="empty-state">거래 기록이 없습니다. 첫 거래를 입력하세요.</td></tr>
+        <tr><td colspan="19" class="empty-state">거래 기록이 없습니다. 첫 거래를 입력하세요.</td></tr>
       </tbody>
     </table>
   </div>
@@ -438,6 +494,39 @@
   </div>
 </div>
 
+<!-- 시장상황별 승률 + 업종별 승률 -->
+<div class="grid grid-2 mt">
+  <div class="card">
+    <h3>📈 시장 상황별 승률</h3>
+    <div class="cond-grid" style="margin-top:12px;" id="marketAnalysis">
+      <div class="empty-state" style="grid-column:1/-1;">데이터가 필요합니다.</div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>🏭 업종별 승률</h3>
+    <div class="cond-grid" style="margin-top:12px;" id="sectorAnalysis">
+      <div class="empty-state" style="grid-column:1/-1;">데이터가 필요합니다.</div>
+    </div>
+  </div>
+</div>
+
+<!-- 갭 방향별 분석 -->
+<div class="card mt">
+  <h3>⬆️⬇️ 갭 방향별 승률</h3>
+  <div class="cond-grid" style="margin-top:12px;" id="gapAnalysis">
+    <div class="empty-state" style="grid-column:1/-1;">데이터가 필요합니다.</div>
+  </div>
+</div>
+
+<!-- 월별 계절성 차트 -->
+<div class="card mt">
+  <h3>🗓️ 월별 평균 수익률 (내 전략 vs 과거 평균)</h3>
+  <p style="font-size:12px;color:#71717a;margin-top:4px;">봄(3~5월)·가을(11~12월) 강세, 여름(8~9월) 약세 계절성 참고</p>
+  <div class="chart-wrap" style="margin-top:12px;">
+    <canvas id="seasonalChart"></canvas>
+  </div>
+</div>
+
 <!-- 3개월 점검 리포트 -->
 <div class="card mt">
   <h3>🔍 3개월 점검 리포트</h3>
@@ -490,6 +579,46 @@
     <div class="form-group">
       <label>매도가</label>
       <input type="number" id="editSellPrice">
+    </div>
+    <div class="form-group">
+      <label>시장 상황</label>
+      <select id="editMarket">
+        <option value="">선택</option>
+        <option value="상승">📈 상승</option>
+        <option value="하락">📉 하락</option>
+        <option value="횡보">➡️ 횡보</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>업종</label>
+      <select id="editSector">
+        <option value="">선택</option>
+        <option value="반도체">반도체</option>
+        <option value="2차전지">2차전지</option>
+        <option value="바이오">바이오</option>
+        <option value="금융">금융</option>
+        <option value="자동차">자동차</option>
+        <option value="조선">조선</option>
+        <option value="철강">철강</option>
+        <option value="화학">화학</option>
+        <option value="IT">IT/소프트웨어</option>
+        <option value="에너지">에너지</option>
+        <option value="건설">건설</option>
+        <option value="유통">유통/소비재</option>
+        <option value="방산">방산</option>
+        <option value="엔터">엔터/미디어</option>
+        <option value="통신">통신</option>
+        <option value="기타">기타</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>갭 방향</label>
+      <select id="editGap">
+        <option value="">선택</option>
+        <option value="갭상승">⬆️ 갭상승</option>
+        <option value="보합">➡️ 보합</option>
+        <option value="갭하락">⬇️ 갭하락</option>
+      </select>
     </div>
     <div class="form-group">
       <label>복기 메모</label>
@@ -579,7 +708,10 @@ function addTrade() {
     return;
   }
 
-  trades.push({ date, stock, buyPrice, sellPrice, memo });
+  const market = document.getElementById('inputMarket').value;
+  const sector = document.getElementById('inputSector').value;
+  const gap = document.getElementById('inputGap').value;
+  trades.push({ date, stock, buyPrice, sellPrice, memo, market, sector, gap });
   trades.sort((a, b) => a.date.localeCompare(b.date));
   saveTrades(trades);
   renderAll();
@@ -587,6 +719,9 @@ function addTrade() {
   document.getElementById('inputStock').value = '';
   document.getElementById('inputBuyPrice').value = '';
   document.getElementById('inputSellPrice').value = '';
+  document.getElementById('inputMarket').value = '';
+  document.getElementById('inputSector').value = '';
+  document.getElementById('inputGap').value = '';
   document.getElementById('inputMemo').value = '';
 }
 
@@ -608,6 +743,9 @@ function openEditModal(idx) {
   document.getElementById('editStock').value = t.stock;
   document.getElementById('editBuyPrice').value = t.buyPrice;
   document.getElementById('editSellPrice').value = t.sellPrice;
+  document.getElementById('editMarket').value = t.market || '';
+  document.getElementById('editSector').value = t.sector || '';
+  document.getElementById('editGap').value = t.gap || '';
   document.getElementById('editMemo').value = t.memo || '';
   document.getElementById('editModal').classList.add('active');
 }
@@ -622,6 +760,9 @@ function saveEdit() {
     stock: document.getElementById('editStock').value.trim(),
     buyPrice: parseInt(document.getElementById('editBuyPrice').value),
     sellPrice: parseInt(document.getElementById('editSellPrice').value),
+    market: document.getElementById('editMarket').value,
+    sector: document.getElementById('editSector').value,
+    gap: document.getElementById('editGap').value,
     memo: document.getElementById('editMemo').value.trim(),
   };
   trades.sort((a, b) => a.date.localeCompare(b.date));
@@ -636,10 +777,10 @@ function exportCSV() {
   if (!trades.length) { alert('내보낼 데이터가 없습니다.'); return; }
   const calculated = calcAllTrades(trades);
   const bom = '\uFEFF';
-  let csv = bom + '날짜,요일,종목,매수가,매도가,수량,매수금액,매도금액,수수료,세금,손익,수익률(%),누적잔고,복기\n';
+  let csv = bom + '날짜,요일,종목,매수가,매도가,수량,매수금액,매도금액,수수료,세금,손익,수익률(%),누적잔고,시장,업종,갭,복기\n';
   calculated.forEach(r => {
     const memo = (r.memo || '').replace(/"/g, '""');
-    csv += `${r.date},${getDayName(r.date)},${r.stock},${r.buyPrice},${r.sellPrice},${r.qty},${r.buyAmt},${r.sellAmt},${r.fee},${r.tax},${r.pnl},${r.returnPct.toFixed(2)},${r.newBalance},"${memo}"\n`;
+    csv += `${r.date},${getDayName(r.date)},${r.stock},${r.buyPrice},${r.sellPrice},${r.qty},${r.buyAmt},${r.sellAmt},${r.fee},${r.tax},${r.pnl},${r.returnPct.toFixed(2)},${r.newBalance},${r.market||''},${r.sector||''},${r.gap||''},"${memo}"\n`;
   });
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const a = document.createElement('a');
@@ -697,6 +838,10 @@ function renderAll() {
   renderDayAnalysis(calculated);
   renderHistogram(calculated);
   renderStockAnalysis(calculated);
+  renderMarketAnalysis(calculated);
+  renderSectorAnalysis(calculated);
+  renderGapAnalysis(calculated);
+  renderSeasonalChart(calculated);
   renderReport(calculated);
 }
 
@@ -763,7 +908,7 @@ function renderTodayBanner(trades) {
 function renderTable(data) {
   const tbody = document.getElementById('tradeBody');
   if (!data.length) {
-    tbody.innerHTML = '<tr><td colspan="16" class="empty-state">거래 기록이 없습니다. 첫 거래를 입력하세요.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="19" class="empty-state">거래 기록이 없습니다. 첫 거래를 입력하세요.</td></tr>';
     return;
   }
   tbody.innerHTML = data.map((r, i) => {
@@ -783,6 +928,9 @@ function renderTable(data) {
       <td class="text-right num ${cls}">${r.pnl >= 0 ? '+' : ''}${fmt(r.pnl)}</td>
       <td class="text-right num ${cls}">${fmtPct(r.returnPct)}</td>
       <td class="text-right num">${fmt(r.newBalance)}</td>
+      <td class="text-center">${r.market||'-'}</td>
+      <td class="text-center">${r.sector||'-'}</td>
+      <td class="text-center">${r.gap||'-'}</td>
       <td class="memo-cell">${escapeHtml(r.memo)}</td>
       <td class="text-center">
         <button class="btn btn-outline btn-sm" onclick="openEditModal(${i})">수정</button>
@@ -1039,6 +1187,119 @@ function renderStockAnalysis(data) {
       <td>${verdict}</td>
     </tr>`;
   }).join('');
+}
+
+// --- 조건별 분석 공통 함수 ---
+function renderCondAnalysis(data, field, wrapperId) {
+  const wrap = document.getElementById(wrapperId);
+  const filtered = data.filter(d => d[field]);
+  if (!filtered.length) {
+    wrap.innerHTML = '<div class="empty-state" style="grid-column:1/-1;">데이터가 필요합니다.</div>';
+    return;
+  }
+  const groups = {};
+  filtered.forEach(d => {
+    const key = d[field];
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(d);
+  });
+  const sorted = Object.entries(groups).sort((a, b) => b[1].length - a[1].length);
+  wrap.innerHTML = sorted.map(([name, trades]) => {
+    const total = trades.length;
+    const wins = trades.filter(t => t.pnl > 0).length;
+    const winRate = (wins / total * 100);
+    const avgRet = trades.reduce((s, t) => s + t.returnPct, 0) / total;
+    const totalPnl = trades.reduce((s, t) => s + t.pnl, 0);
+    const cls = avgRet >= 0 ? 'profit' : 'loss';
+    return `<div class="cond-card">
+      <div class="cond-name">${escapeHtml(name)}</div>
+      <div class="cond-winrate ${cls}">${winRate.toFixed(0)}%</div>
+      <div class="cond-stat">
+        ${total}회 (${wins}승 ${total-wins}패)<br>
+        평균 <span class="${cls}">${fmtPct(avgRet)}</span><br>
+        합계 <span class="${cls}">${totalPnl>=0?'+':''}${fmt(totalPnl)}원</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderMarketAnalysis(data) { renderCondAnalysis(data, 'market', 'marketAnalysis'); }
+function renderSectorAnalysis(data) { renderCondAnalysis(data, 'sector', 'sectorAnalysis'); }
+function renderGapAnalysis(data) { renderCondAnalysis(data, 'gap', 'gapAnalysis'); }
+
+// --- 월별 계절성 차트 (내 전략 vs 기준) ---
+let seasonalChartInstance = null;
+function renderSeasonalChart(data) {
+  const ctx = document.getElementById('seasonalChart').getContext('2d');
+  if (!data.length) {
+    if (seasonalChartInstance) { seasonalChartInstance.destroy(); seasonalChartInstance = null; }
+    return;
+  }
+
+  // 월별 평균 수익률 집계
+  const monthData = {};
+  for (let m = 1; m <= 12; m++) monthData[m] = [];
+  data.forEach(d => {
+    const month = parseInt(d.date.slice(5, 7));
+    monthData[month].push(d.returnPct);
+  });
+
+  const myAvg = [];
+  const counts = [];
+  for (let m = 1; m <= 12; m++) {
+    const arr = monthData[m];
+    myAvg.push(arr.length ? arr.reduce((a,b) => a+b, 0) / arr.length : 0);
+    counts.push(arr.length);
+  }
+
+  // KOSPI 외국인 따라매매 과거 평균 (2020-2025 기준 참고값)
+  const kospiRef = [-0.5, 0.3, 1.8, 2.2, 4.0, 2.0, 2.0, -1.0, -2.5, -0.5, 4.5, 4.8];
+
+  if (seasonalChartInstance) seasonalChartInstance.destroy();
+  seasonalChartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'],
+      datasets: [
+        {
+          label: '내 전략',
+          data: myAvg,
+          backgroundColor: myAvg.map(v => v >= 0 ? 'rgba(59,130,246,0.8)' : 'rgba(239,68,68,0.8)'),
+          borderRadius: 4,
+          order: 1,
+        },
+        {
+          label: '과거 평균 (참고)',
+          data: kospiRef,
+          backgroundColor: 'rgba(134,239,172,0.35)',
+          borderRadius: 4,
+          order: 2,
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#a1a1aa', font: { size: 12 } } },
+        tooltip: {
+          callbacks: {
+            afterLabel: function(ctx) {
+              if (ctx.datasetIndex === 0) return `(${counts[ctx.dataIndex]}건)`;
+              return '';
+            },
+            label: ctx => ctx.dataset.label + ': ' + ctx.raw.toFixed(2) + '%'
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { color: '#71717a' }, grid: { display: false } },
+        y: {
+          ticks: { color: '#71717a', callback: v => v.toFixed(1) + '%' },
+          grid: { color: '#27272a' }
+        }
+      }
+    }
+  });
 }
 
 // --- 3개월 점검 리포트 ---
