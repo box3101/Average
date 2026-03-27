@@ -47,34 +47,6 @@
   }
   .mt { margin-top: 24px; }
 
-  /* 룰 카드 */
-  .rule-timeline { display: flex; gap: 12px; flex-wrap: wrap; }
-  .rule-step {
-    flex: 1; min-width: 160px; background: #1f1f23; border-radius: 8px;
-    padding: 14px; position: relative;
-  }
-  .rule-step .time {
-    font-size: 12px; font-weight: 700; color: #3b82f6;
-    margin-bottom: 6px; display: block;
-  }
-  .rule-step .desc { font-size: 13px; color: #a1a1aa; line-height: 1.5; }
-  .rule-step::after {
-    content: '→'; position: absolute; right: -10px; top: 50%;
-    transform: translateY(-50%); color: #3f3f46; font-size: 14px;
-  }
-  .rule-step:last-child::after { display: none; }
-
-  .absolute-rules {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
-    margin-top: 14px; padding-top: 14px; border-top: 1px solid #27272a;
-  }
-  .absolute-rules li {
-    list-style: none; font-size: 13px; color: #f87171; padding-left: 18px;
-    position: relative; line-height: 1.6;
-  }
-  .absolute-rules li::before {
-    content: '✕'; position: absolute; left: 0; color: #dc2626; font-size: 11px; top: 2px;
-  }
 
   /* 통계 카드 */
   .stat-card {
@@ -193,35 +165,6 @@ tbody td.memo-cell:hover { color: #e4e4e7; }
     text-align: center; padding: 40px; color: #52525b; font-size: 14px;
   }
 
-  /* 오늘 상태 배너 */
-  .today-banner {
-    border-radius: 12px; padding: 20px 24px; margin-bottom: 24px;
-    display: flex; align-items: center; gap: 16px; font-size: 15px; font-weight: 600;
-  }
-  .today-banner .icon { font-size: 32px; }
-  .today-banner .msg { flex: 1; }
-  .today-banner .msg small { display: block; font-size: 12px; font-weight: 400; margin-top: 4px; color: rgba(255,255,255,0.7); }
-  .banner-done {
-    background: linear-gradient(135deg, #1e3a5f, #1e293b);
-    border: 1px solid #3b82f6;
-  }
-  .banner-wait {
-    background: linear-gradient(135deg, #3b1f1f, #1e293b);
-    border: 1px solid #f59e0b;
-  }
-  .banner-closed {
-    background: linear-gradient(135deg, #1f1f23, #18181b);
-    border: 1px solid #3f3f46; color: #71717a;
-  }
-
-  /* 룰 카드 강화 */
-  .rule-warning {
-    background: #2d1215; border: 1px solid #7f1d1d; border-radius: 8px;
-    padding: 14px 18px; margin-top: 14px;
-    font-size: 16px; font-weight: 700; color: #fca5a5; text-align: center;
-    letter-spacing: 1px;
-  }
-  .rule-warning span { color: #ef4444; font-size: 20px; }
 
   /* 조건별 분석 카드 */
   .cond-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
@@ -239,9 +182,6 @@ tbody td.memo-cell:hover { color: #e4e4e7; }
     .form-row-meta { grid-template-columns: 1fr 1fr !important; }
     .form-row-memo { grid-template-columns: 1fr; }
     .report-grid { grid-template-columns: 1fr; }
-    .absolute-rules { grid-template-columns: 1fr; }
-    .rule-timeline { flex-direction: column; }
-    .rule-step::after { display: none; }
     .day-grid { grid-template-columns: repeat(3, 1fr); }
   }
 </style>
@@ -263,42 +203,6 @@ tbody td.memo-cell:hover { color: #e4e4e7; }
   </div>
 </div>
 
-<!-- 오늘 매매 상태 배너 -->
-<div id="todayBanner" class="today-banner banner-wait">
-  <div class="icon">⏳</div>
-  <div class="msg">로딩 중...</div>
-</div>
-
-<!-- ① 룰 카드 -->
-<div class="card" style="margin-bottom:24px;">
-  <h3>📋 매매 절차</h3>
-  <div class="rule-timeline" style="margin-top:12px;">
-    <div class="rule-step">
-      <span class="time">오후 3:20</span>
-      <span class="desc">토스 → 투자자 동향<br>외국인 순매수 1위 잠정 확인<br>(ETF·300만↑ 패스)</span>
-    </div>
-    <div class="rule-step">
-      <span class="time">오후 3:20~3:30</span>
-      <span class="desc">동시호가 시간<br>해당 종목 매수 주문 제출<br>전액 투입</span>
-    </div>
-    <div class="rule-step">
-      <span class="time">오후 3:30</span>
-      <span class="desc">종가로 체결 확인</span>
-    </div>
-    <div class="rule-step">
-      <span class="time">그날 밤</span>
-      <span class="desc">내일 아침 8:50<br>알람 설정</span>
-    </div>
-    <div class="rule-step">
-      <span class="time">다음날 8:50</span>
-      <span class="desc">시장가 매도<br>9시 시초가 체결 확인</span>
-    </div>
-    <div class="rule-step">
-      <span class="time">오후 3:30</span>
-      <span class="desc">다시 1번부터<br>반복</span>
-    </div>
-  </div>
-</div>
 
 <!-- 핵심 통계 -->
 <div class="grid grid-5" id="statsGrid">
@@ -904,7 +808,7 @@ function importCSV(event) {
 function renderAllLocal() {
   const trades = loadTradesLocal();
   const calculated = calcAllTrades(trades);
-  renderTodayBanner(trades);
+
   renderTable(calculated);
   renderStats(calculated);
   renderMonthlyChart(calculated);
@@ -921,7 +825,7 @@ function renderAllLocal() {
 async function renderAll() {
   const trades = await loadTrades();
   const calculated = calcAllTrades(trades);
-  renderTodayBanner(trades);
+
   renderTable(calculated);
   renderStats(calculated);
   renderMonthlyChart(calculated);
@@ -934,64 +838,6 @@ async function renderAll() {
   renderReport(calculated);
 }
 
-// --- 오늘 매매 상태 배너 ---
-function renderTodayBanner(trades) {
-  const banner = document.getElementById('todayBanner');
-  const today = new Date().toISOString().slice(0, 10);
-  const todayTrade = trades.find(t => t.date === today);
-  const hour = new Date().getHours();
-
-  if (todayTrade) {
-    banner.className = 'today-banner banner-done';
-    banner.innerHTML = `
-      <div class="icon">✅</div>
-      <div class="msg">
-        오늘(${today}) 매매 완료 — <strong>${escapeHtml(todayTrade.stock)}</strong>
-        <small>추가 매매 금지! 내일 3시 30분까지 앱 안 보기</small>
-      </div>`;
-  } else if (hour < 15) {
-    const min = new Date().getMinutes();
-    banner.className = 'today-banner banner-closed';
-    banner.innerHTML = `
-      <div class="icon">😴</div>
-      <div class="msg">
-        아직 매매 시간 아닙니다
-        <small>오후 3시 20분에 토스 → 투자자 동향 → 외국인 순매수 1위 잠정 확인</small>
-      </div>`;
-  } else if (hour === 15 && min < 20) {
-    banner.className = 'today-banner banner-closed';
-    banner.innerHTML = `
-      <div class="icon">😴</div>
-      <div class="msg">
-        아직 매매 시간 아닙니다
-        <small>오후 3시 20분에 토스 → 투자자 동향 → 외국인 순매수 1위 잠정 확인</small>
-      </div>`;
-  } else if (hour === 15 && min >= 20 && min < 30) {
-    banner.className = 'today-banner banner-wait';
-    banner.innerHTML = `
-      <div class="icon">🔥</div>
-      <div class="msg">
-        지금! 동시호가 매수 시간! (3:20~3:30)
-        <small>순매수 1위 확인 → 매수 주문 제출 → 3:30 종가 체결. 한 번만!</small>
-      </div>`;
-  } else if (hour === 15 && min >= 30) {
-    banner.className = 'today-banner banner-closed';
-    banner.innerHTML = `
-      <div class="icon">⏰</div>
-      <div class="msg">
-        오늘 매매 시간이 지났습니다
-        <small>오늘은 패스. 내일 3시 20분에 다시!</small>
-      </div>`;
-  } else {
-    banner.className = 'today-banner banner-closed';
-    banner.innerHTML = `
-      <div class="icon">⏰</div>
-      <div class="msg">
-        오늘 매매 시간이 지났습니다
-        <small>오늘은 패스. 내일 3시 20분에 다시!</small>
-      </div>`;
-  }
-}
 
 // --- 거래 테이블 ---
 function renderTable(data) {
