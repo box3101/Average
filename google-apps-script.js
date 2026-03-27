@@ -16,7 +16,7 @@ const PASSWORD = 'average2026'; // 원하는 비밀번호로 변경하세요
 const HEADERS = [
   'date', 'stock', 'buyPrice', 'sellPrice',
   'kospi', 'kosdaq', 'nasdaq', 'fx',
-  'sector', 'gap', 'memo'
+  'sector', 'gap', 'memo', 'nasdaqFutures', 'foreignDays'
 ];
 
 // --- 인증 ---
@@ -49,7 +49,7 @@ function doGet(e) {
       // 숫자 필드 변환
       if (['buyPrice', 'sellPrice'].includes(h)) {
         val = parseInt(val) || 0;
-      } else if (['kospi', 'kosdaq', 'nasdaq', 'fx', 'gap'].includes(h)) {
+      } else if (['kospi', 'kosdaq', 'nasdaq', 'fx', 'gap', 'nasdaqFutures', 'foreignDays'].includes(h)) {
         val = val === '' || val === null ? null : parseFloat(val);
       } else if (h === 'date' && val instanceof Date) {
         val = Utilities.formatDate(val, Session.getScriptTimeZone(), 'yyyy-MM-dd');
