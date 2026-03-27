@@ -86,6 +86,7 @@
   }
   tbody td.memo-cell { white-space: normal; max-width: 200px; font-size: 12px; color: #a1a1aa; cursor: pointer; }
 tbody td.memo-cell:hover { color: #e4e4e7; }
+tbody tr.friday-row { border-left: 3px solid #f59e0b; }
 
 /* 복기 모달 */
 .memo-modal { width: 1200px; max-width: 90vw; max-height: 80vh; padding: 32px; }
@@ -295,6 +296,16 @@ tbody td.memo-cell:hover { color: #e4e4e7; }
       <input type="number" step="0.01" id="inputGap" placeholder="+1.5">
     </div>
   </div>
+  <div class="form-row-meta" style="grid-template-columns: repeat(2, 1fr); margin-top: 10px;">
+    <div class="form-group">
+      <label>나스닥 선물 (%, 전일)</label>
+      <input type="number" step="0.01" id="inputNasdaqFutures" placeholder="-0.5">
+    </div>
+    <div class="form-group">
+      <label>외국인 연속 매수일수</label>
+      <input type="number" id="inputForeignDays" placeholder="3">
+    </div>
+  </div>
   <div class="form-row-memo">
     <div class="form-group">
       <label>복기 메모</label>
@@ -333,12 +344,14 @@ tbody td.memo-cell:hover { color: #e4e4e7; }
           <th class="text-right">환율</th>
           <th>업종</th>
           <th class="text-right">갭</th>
+          <th class="text-right">선물</th>
+          <th class="text-right">외연매</th>
           <th>복기</th>
           <th class="text-center">관리</th>
         </tr>
       </thead>
       <tbody id="tradeBody">
-        <tr><td colspan="22" class="empty-state">거래 기록이 없습니다. 첫 거래를 입력하세요.</td></tr>
+        <tr><td colspan="24" class="empty-state">거래 기록이 없습니다. 첫 거래를 입력하세요.</td></tr>
       </tbody>
     </table>
   </div>
@@ -517,6 +530,14 @@ tbody td.memo-cell:hover { color: #e4e4e7; }
         <label>갭 (%, 시초가)</label>
         <input type="number" step="0.01" id="editGap" placeholder="+1.5">
       </div>
+      <div class="form-group">
+        <label>나스닥 선물 (%, 전일)</label>
+        <input type="number" step="0.01" id="editNasdaqFutures" placeholder="-0.5">
+      </div>
+      <div class="form-group">
+        <label>외국인 연속 매수일수</label>
+        <input type="number" id="editForeignDays" placeholder="3">
+      </div>
     </div>
     <div class="form-group">
       <label>복기 메모</label>
@@ -658,7 +679,26 @@ async function addTrade() {
   const fx = parseFloat(document.getElementById('inputFx').value) || null;
   const sector = document.getElementById('inputSector').value;
   const gap = parseFloat(document.getElementById('inputGap').value) || null;
-  trades.push({ date, stock, buyPrice, sellPrice, memo, kospi, kosdaq, nasdaq, fx, sector, gap });
+  const nasdaqFutures = parseFloat(document.getElementById('inputNasdaqFutures').value) || null;
+  const foreignDays = parseInt(document.getElementById('inputForeignDays').value) || null;
+
+  // 주말 리스크 경고 (금요일)
+  const inputDow = new Date(date).getDay();
+  if (inputDow === 5) {
+    if (!confirm('⚠️ 금요일 주말 리스크!\n\n토/일 이틀간 글로벌 악재(전쟁·뉴스 등) 리스크를 감수해야 합니다.\n그래도 진행하시겠습니까?')) return;
+  }
+
+  // 나스닥 선물 마이너스 경고
+  if (nasdaqFutures != null && nasdaqFutures < 0) {
+    if (!confirm(`⚠️ 나스닥 선물 ${nasdaqFutures.toFixed(2)}% (마이너스)\n\n내일 아침 갭 하락 가능성이 있습니다.\nSkip을 권장하지만, 그래도 진행하시겠습니까?`)) return;
+  }
+
+  // 외국인 연속 매수 3일 미만 경고
+  if (foreignDays != null && foreignDays < 3) {
+    if (!confirm(`⚠️ 외국인 연속 매수 ${foreignDays}일 (3일 미만)\n\n단타 물량일 확률이 높습니다.\n그래도 진행하시겠습니까?`)) return;
+  }
+
+  trades.push({ date, stock, buyPrice, sellPrice, memo, kospi, kosdaq, nasdaq, fx, sector, gap, nasdaqFutures, foreignDays });
   trades.sort((a, b) => a.date.localeCompare(b.date));
   saveTrades(trades);
   renderAllLocal();
@@ -672,6 +712,8 @@ async function addTrade() {
   document.getElementById('inputFx').value = '';
   document.getElementById('inputSector').value = '';
   document.getElementById('inputGap').value = '';
+  document.getElementById('inputNasdaqFutures').value = '';
+  document.getElementById('inputForeignDays').value = '';
   document.getElementById('inputMemo').value = '';
 }
 
@@ -720,6 +762,8 @@ function openEditModal(idx) {
   document.getElementById('editFx').value = t.fx ?? '';
   document.getElementById('editSector').value = t.sector || '';
   document.getElementById('editGap').value = t.gap ?? '';
+  document.getElementById('editNasdaqFutures').value = t.nasdaqFutures ?? '';
+  document.getElementById('editForeignDays').value = t.foreignDays ?? '';
   document.getElementById('editMemo').value = t.memo || '';
   document.getElementById('editModal').classList.add('active');
 }
@@ -740,6 +784,8 @@ function saveEdit() {
     fx: parseFloat(document.getElementById('editFx').value) || null,
     sector: document.getElementById('editSector').value,
     gap: parseFloat(document.getElementById('editGap').value) || null,
+    nasdaqFutures: parseFloat(document.getElementById('editNasdaqFutures').value) || null,
+    foreignDays: parseInt(document.getElementById('editForeignDays').value) || null,
     memo: document.getElementById('editMemo').value.trim(),
   };
   trades.sort((a, b) => a.date.localeCompare(b.date));
@@ -843,12 +889,13 @@ async function renderAll() {
 function renderTable(data) {
   const tbody = document.getElementById('tradeBody');
   if (!data.length) {
-    tbody.innerHTML = '<tr><td colspan="22" class="empty-state">거래 기록이 없습니다. 첫 거래를 입력하세요.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="24" class="empty-state">거래 기록이 없습니다. 첫 거래를 입력하세요.</td></tr>';
     return;
   }
   tbody.innerHTML = data.map((r, i) => {
     const cls = r.pnl >= 0 ? 'profit' : 'loss';
-    return `<tr>
+    const isFriday = new Date(r.date).getDay() === 5;
+    return `<tr class="${isFriday ? 'friday-row' : ''}">
       <td class="num">${i + 1}</td>
       <td>${r.date}</td>
       <td class="text-center">${getDayName(r.date)}</td>
@@ -869,6 +916,8 @@ function renderTable(data) {
       <td class="text-right num">${r.fx!=null?fmt(r.fx):'-'}</td>
       <td class="text-center">${r.sector||'-'}</td>
       <td class="text-right num ${(r.gap||0)>=0?'profit':'loss'}">${r.gap!=null?(r.gap>=0?'+':'')+r.gap.toFixed(2)+'%':'-'}</td>
+      <td class="text-right num ${(r.nasdaqFutures||0)>=0?'profit':'loss'}">${r.nasdaqFutures!=null?(r.nasdaqFutures>=0?'+':'')+r.nasdaqFutures.toFixed(2)+'%':'-'}</td>
+      <td class="text-right num ${(r.foreignDays||0)>=3?'profit':'loss'}">${r.foreignDays!=null?r.foreignDays+'일':'-'}</td>
       <td class="memo-cell" onclick="openMemoModal(${i})" title="클릭하여 복기 보기">${escapeHtml(r.memo)}</td>
       <td class="text-center">
         <button class="btn btn-outline btn-sm" onclick="openEditModal(${i})">수정</button>
