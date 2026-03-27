@@ -112,7 +112,19 @@
   tbody td {
     padding: 10px 12px; border-bottom: 1px solid #1f1f23; white-space: nowrap;
   }
-  tbody td.memo-cell { white-space: normal; max-width: 200px; font-size: 12px; color: #a1a1aa; }
+  tbody td.memo-cell { white-space: normal; max-width: 200px; font-size: 12px; color: #a1a1aa; cursor: pointer; }
+tbody td.memo-cell:hover { color: #e4e4e7; }
+
+/* 복기 모달 */
+.memo-modal { width: 560px; max-width: 90vw; }
+.memo-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.memo-modal-header h3 { margin: 0; }
+.memo-modal-close { background: none; border: none; color: #71717a; font-size: 20px; cursor: pointer; padding: 4px 8px; }
+.memo-modal-close:hover { color: #e4e4e7; }
+.memo-modal-meta { display: flex; gap: 12px; margin-bottom: 16px; font-size: 13px; color: #a1a1aa; }
+.memo-modal-meta span { background: #27272a; padding: 4px 10px; border-radius: 6px; }
+.memo-modal-content { background: #1f1f23; border-radius: 8px; padding: 20px; font-size: 14px; line-height: 1.8; color: #e4e4e7; white-space: pre-wrap; min-height: 80px; }
+.memo-modal-empty { color: #52525b; font-style: italic; }
   tbody tr:hover { background: #1f1f23; }
   .text-right { text-align: right; }
   .text-center { text-align: center; }
@@ -509,36 +521,6 @@
   </div>
 </div>
 
-<!-- 시장 지표별 승률 분석 -->
-<div class="grid grid-2 mt">
-  <div class="card">
-    <h3>📈 KOSPI 구간별 승률</h3>
-    <div class="cond-grid" style="margin-top:12px;" id="kospiAnalysis">
-      <div class="empty-state" style="grid-column:1/-1;">데이터가 필요합니다.</div>
-    </div>
-  </div>
-  <div class="card">
-    <h3>📊 KOSDAQ 구간별 승률</h3>
-    <div class="cond-grid" style="margin-top:12px;" id="kosdaqAnalysis">
-      <div class="empty-state" style="grid-column:1/-1;">데이터가 필요합니다.</div>
-    </div>
-  </div>
-</div>
-
-<div class="grid grid-2 mt">
-  <div class="card">
-    <h3>🇺🇸 나스닥 구간별 승률</h3>
-    <div class="cond-grid" style="margin-top:12px;" id="nasdaqAnalysis">
-      <div class="empty-state" style="grid-column:1/-1;">데이터가 필요합니다.</div>
-    </div>
-  </div>
-  <div class="card">
-    <h3>💱 환율 구간별 승률</h3>
-    <div class="cond-grid" style="margin-top:12px;" id="fxAnalysis">
-      <div class="empty-state" style="grid-column:1/-1;">데이터가 필요합니다.</div>
-    </div>
-  </div>
-</div>
 
 <div class="grid grid-2 mt">
   <div class="card">
@@ -671,6 +653,21 @@
       <button class="btn btn-outline" onclick="closeEditModal()">취소</button>
       <button class="btn btn-primary" onclick="saveEdit()">저장</button>
     </div>
+  </div>
+</div>
+
+<!-- 복기 모달 -->
+<div class="modal-overlay" id="memoModal" onclick="closeMemoModal(event)">
+  <div class="modal memo-modal" onclick="event.stopPropagation()">
+    <div class="memo-modal-header">
+      <h3>복기</h3>
+      <button class="memo-modal-close" onclick="closeMemoModal()">&times;</button>
+    </div>
+    <div class="memo-modal-meta">
+      <span id="memoModalDate"></span>
+      <span id="memoModalStock"></span>
+    </div>
+    <div class="memo-modal-content" id="memoModalContent"></div>
   </div>
 </div>
 
@@ -814,6 +811,27 @@ async function deleteTrade(idx) {
   renderAllLocal();
 }
 
+// --- 복기 모달 ---
+function openMemoModal(idx) {
+  const trades = loadTradesLocal();
+  const t = trades[idx];
+  document.getElementById('memoModalDate').textContent = t.date;
+  document.getElementById('memoModalStock').textContent = t.stock;
+  const content = document.getElementById('memoModalContent');
+  if (t.memo && t.memo.trim()) {
+    content.textContent = t.memo;
+    content.classList.remove('memo-modal-empty');
+  } else {
+    content.textContent = '작성된 복기가 없습니다.';
+    content.classList.add('memo-modal-empty');
+  }
+  document.getElementById('memoModal').classList.add('active');
+}
+function closeMemoModal(e) {
+  if (e && e.target !== e.currentTarget) return;
+  document.getElementById('memoModal').classList.remove('active');
+}
+
 // --- 수정 모달 ---
 function openEditModal(idx) {
   const trades = loadTradesLocal();
@@ -925,10 +943,6 @@ function renderAllLocal() {
   renderDayAnalysis(calculated);
   renderHistogram(calculated);
   renderStockAnalysis(calculated);
-  renderRangeAnalysis(calculated, 'kospi', 'kospiAnalysis', [-2,-1,0,1,2]);
-  renderRangeAnalysis(calculated, 'kosdaq', 'kosdaqAnalysis', [-2,-1,0,1,2]);
-  renderRangeAnalysis(calculated, 'nasdaq', 'nasdaqAnalysis', [-2,-1,0,1,2]);
-  renderFxAnalysis(calculated);
   renderSectorAnalysis(calculated);
   renderRangeAnalysis(calculated, 'gap', 'gapAnalysis', [-2,-1,0,1,2]);
   renderSeasonalChart(calculated);
@@ -948,10 +962,6 @@ async function renderAll() {
   renderDayAnalysis(calculated);
   renderHistogram(calculated);
   renderStockAnalysis(calculated);
-  renderRangeAnalysis(calculated, 'kospi', 'kospiAnalysis', [-2,-1,0,1,2]);
-  renderRangeAnalysis(calculated, 'kosdaq', 'kosdaqAnalysis', [-2,-1,0,1,2]);
-  renderRangeAnalysis(calculated, 'nasdaq', 'nasdaqAnalysis', [-2,-1,0,1,2]);
-  renderFxAnalysis(calculated);
   renderSectorAnalysis(calculated);
   renderRangeAnalysis(calculated, 'gap', 'gapAnalysis', [-2,-1,0,1,2]);
   renderSeasonalChart(calculated);
@@ -1048,7 +1058,7 @@ function renderTable(data) {
       <td class="text-right num">${r.fx!=null?fmt(r.fx):'-'}</td>
       <td class="text-center">${r.sector||'-'}</td>
       <td class="text-right num ${(r.gap||0)>=0?'profit':'loss'}">${r.gap!=null?(r.gap>=0?'+':'')+r.gap.toFixed(2)+'%':'-'}</td>
-      <td class="memo-cell">${escapeHtml(r.memo)}</td>
+      <td class="memo-cell" onclick="openMemoModal(${i})" title="클릭하여 복기 보기">${escapeHtml(r.memo)}</td>
       <td class="text-center">
         <button class="btn btn-outline btn-sm" onclick="openEditModal(${i})">수정</button>
         <button class="btn btn-danger btn-sm" onclick="deleteTrade(${i})">삭제</button>
@@ -1353,48 +1363,6 @@ function renderRangeAnalysis(data, field, wrapperId, thresholds) {
   }).join('');
 }
 
-// --- 환율 구간별 분석 ---
-function renderFxAnalysis(data) {
-  const wrap = document.getElementById('fxAnalysis');
-  const filtered = data.filter(d => d.fx != null);
-  if (!filtered.length) {
-    wrap.innerHTML = '<div class="empty-state" style="grid-column:1/-1;">데이터가 필요합니다.</div>';
-    return;
-  }
-  const bins = [
-    { label: '~1300원', min: 0, max: 1300 },
-    { label: '1300~1350', min: 1300, max: 1350 },
-    { label: '1350~1400', min: 1350, max: 1400 },
-    { label: '1400~1450', min: 1400, max: 1450 },
-    { label: '1450원~', min: 1450, max: Infinity },
-  ];
-  const groups = bins.map(() => []);
-  filtered.forEach(d => {
-    for (let i = 0; i < bins.length; i++) {
-      if (d.fx >= bins[i].min && d.fx < bins[i].max) { groups[i].push(d); break; }
-      if (i === bins.length - 1) groups[i].push(d);
-    }
-  });
-  wrap.innerHTML = bins.map((bin, i) => {
-    const arr = groups[i];
-    const total = arr.length;
-    if (!total) return `<div class="cond-card"><div class="cond-name">${bin.label}</div><div class="cond-winrate" style="color:#52525b;">-</div><div class="cond-stat">0회</div></div>`;
-    const wins = arr.filter(t => t.pnl > 0).length;
-    const winRate = (wins / total * 100);
-    const avgRet = arr.reduce((s, t) => s + t.returnPct, 0) / total;
-    const totalPnl = arr.reduce((s, t) => s + t.pnl, 0);
-    const cls = avgRet >= 0 ? 'profit' : 'loss';
-    return `<div class="cond-card">
-      <div class="cond-name">${bin.label}</div>
-      <div class="cond-winrate ${cls}">${winRate.toFixed(0)}%</div>
-      <div class="cond-stat">
-        ${total}회 (${wins}승 ${total-wins}패)<br>
-        평균 <span class="${cls}">${fmtPct(avgRet)}</span><br>
-        합계 <span class="${cls}">${totalPnl>=0?'+':''}${fmt(totalPnl)}원</span>
-      </div>
-    </div>`;
-  }).join('');
-}
 
 // --- 업종별 분석 ---
 function renderSectorAnalysis(data) {
