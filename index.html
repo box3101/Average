@@ -116,14 +116,14 @@
 tbody td.memo-cell:hover { color: #e4e4e7; }
 
 /* 복기 모달 */
-.memo-modal { width: 560px; max-width: 90vw; }
+.memo-modal { width: 1200px; max-width: 90vw; max-height: 80vh; padding: 32px; }
 .memo-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
 .memo-modal-header h3 { margin: 0; }
 .memo-modal-close { background: none; border: none; color: #71717a; font-size: 20px; cursor: pointer; padding: 4px 8px; }
 .memo-modal-close:hover { color: #e4e4e7; }
 .memo-modal-meta { display: flex; gap: 12px; margin-bottom: 16px; font-size: 13px; color: #a1a1aa; }
 .memo-modal-meta span { background: #27272a; padding: 4px 10px; border-radius: 6px; }
-.memo-modal-content { background: #1f1f23; border-radius: 8px; padding: 20px; font-size: 14px; line-height: 1.8; color: #e4e4e7; white-space: pre-wrap; min-height: 80px; }
+.memo-modal-content { background: #1f1f23; border-radius: 8px; padding: 28px; font-size: 16px; line-height: 2; color: #e4e4e7; white-space: pre-wrap; min-height: 200px; overflow-y: auto; }
 .memo-modal-empty { color: #52525b; font-style: italic; }
   tbody tr:hover { background: #1f1f23; }
   .text-right { text-align: right; }
@@ -182,7 +182,7 @@ tbody td.memo-cell:hover { color: #e4e4e7; }
   .modal-overlay.active { display: flex; }
   .modal {
     background: #18181b; border: 1px solid #27272a; border-radius: 12px;
-    padding: 24px; width: 440px; max-width: 90vw;
+    padding: 32px; width: 1200px; max-width: 90vw;
   }
   .modal h3 { margin-bottom: 16px; }
   .modal .form-group { margin-bottom: 12px; }
